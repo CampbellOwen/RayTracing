@@ -7,41 +7,27 @@ pub use vec3::{cross, dot, Vec3};
 mod ray;
 pub use ray::Ray;
 
-fn hit_sphere(center: &Vec3, radius: f32, ray: &Ray) -> f32 {
-    let oc = ray.origin - center;
-    //let a = dot(&ray.dir, &ray.dir);
-    //let b = 2.0 * dot(&oc, &ray.dir);
-    //let c = dot(&oc, &oc) - radius * radius;
-    //let discriminant = b * b - (4.0 * a * c);
+mod hit;
+pub use hit::{HitRecord, Hittable};
 
-    let a = ray.dir.length_squared();
-    let half_b = dot(&oc, &ray.dir);
-    let c = oc.length_squared() - radius * radius;
-    let discriminant = half_b * half_b - a * c;
-
-    if discriminant < 0.0 {
-        return -1.0;
-    }
-
-    (-half_b - discriminant.sqrt()) / a
-}
+mod shape;
+pub use shape::Sphere;
 
 pub fn ray_colour(ray: &Ray) -> Vec3 {
-    let sphere = (
-        Vec3 {
+    let sphere = Sphere {
+        center: Vec3 {
             x: 0.0,
             y: 0.0,
             z: -1.0,
         },
-        0.5,
-    );
-    let t = hit_sphere(&sphere.0, sphere.1, ray);
-    if t > 0.0 {
-        let normal = (ray.at(t) - sphere.0).unit();
+        radius: 0.5,
+    };
+    let hr = sphere.hit(ray, 0.0, 100.0);
+    if let Some(hr) = hr {
         return Vec3 {
-            x: normal.x + 1.0,
-            y: normal.y + 1.0,
-            z: normal.z + 1.0,
+            x: hr.normal.x + 1.0,
+            y: hr.normal.y + 1.0,
+            z: hr.normal.z + 1.0,
         } * 0.5;
     }
 
