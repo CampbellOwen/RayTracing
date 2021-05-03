@@ -9,16 +9,21 @@ pub use ray::Ray;
 
 fn hit_sphere(center: &Vec3, radius: f32, ray: &Ray) -> f32 {
     let oc = ray.origin - center;
-    let a = dot(&ray.dir, &ray.dir);
-    let b = 2.0 * dot(&oc, &ray.dir);
-    let c = dot(&oc, &oc) - radius * radius;
-    let discriminant = b * b - (4.0 * a * c);
+    //let a = dot(&ray.dir, &ray.dir);
+    //let b = 2.0 * dot(&oc, &ray.dir);
+    //let c = dot(&oc, &oc) - radius * radius;
+    //let discriminant = b * b - (4.0 * a * c);
+
+    let a = ray.dir.length_squared();
+    let half_b = dot(&oc, &ray.dir);
+    let c = oc.length_squared() - radius * radius;
+    let discriminant = half_b * half_b - a * c;
 
     if discriminant < 0.0 {
         return -1.0;
     }
 
-    (-b - discriminant.sqrt()) / (2.0 * a)
+    (-half_b - discriminant.sqrt()) / a
 }
 
 pub fn ray_colour(ray: &Ray) -> Vec3 {
