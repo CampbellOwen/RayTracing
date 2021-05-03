@@ -7,14 +7,18 @@ pub use vec3::{cross, dot, Vec3};
 mod ray;
 pub use ray::Ray;
 
-fn hit_sphere(center: &Vec3, radius: f32, ray: &Ray) -> bool {
+fn hit_sphere(center: &Vec3, radius: f32, ray: &Ray) -> f32 {
     let oc = ray.origin - center;
     let a = dot(&ray.dir, &ray.dir);
     let b = 2.0 * dot(&oc, &ray.dir);
     let c = dot(&oc, &oc) - radius * radius;
     let discriminant = b * b - (4.0 * a * c);
 
-    discriminant > 0.0
+    if discriminant < 0.0 {
+        return -1.0;
+    }
+
+    (-b - discriminant.sqrt()) / (2.0 * a)
 }
 
 pub fn ray_colour(ray: &Ray) -> Vec3 {
@@ -26,12 +30,14 @@ pub fn ray_colour(ray: &Ray) -> Vec3 {
         },
         0.5,
     );
-    if hit_sphere(&sphere.0, sphere.1, ray) {
+    let t = hit_sphere(&sphere.0, sphere.1, ray);
+    if t > 0.0 {
+        let normal = (ray.at(t) - sphere.0).unit();
         return Vec3 {
-            x: 1.0,
-            y: 0.0,
-            z: 0.0,
-        };
+            x: normal.x + 1.0,
+            y: normal.y + 1.0,
+            z: normal.z + 1.0,
+        } * 0.5;
     }
 
     let unit_dir = ray.dir.unit();
