@@ -11,7 +11,6 @@ pub fn write_image(img: &Image, location: &str) -> Result<(), io::Error> {
     let mut file = File::create(&location)?;
     write!(file, "P3\n{} {}\n255\n", img.size.0, img.size.1)?;
 
-    //for pixel in &img.data {
     for y in (0..img.size.1).rev() {
         if y % 10 == 0 {
             print!("\r{:0>4} scanlines remaining", y);

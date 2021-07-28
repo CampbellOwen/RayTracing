@@ -11,10 +11,6 @@ pub struct Sphere {
 impl Hittable for Sphere {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let oc = ray.origin - &self.center;
-        //let a = dot(&ray.dir, &ray.dir);
-        //let b = 2.0 * dot(&oc, &ray.dir);
-        //let c = dot(&oc, &oc) - radius * radius;
-        //let discriminant = b * b - (4.0 * a * c);
 
         let a = ray.dir.length_squared();
         let half_b = dot(&oc, &ray.dir);
