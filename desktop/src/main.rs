@@ -9,7 +9,7 @@ mod exporters;
 
 fn main() {
     let aspect_ratio = 16.0 / 9.0;
-    let width = 400;
+    let width = 800;
     let height = (width as f64 / aspect_ratio) as u32;
 
     let mut img = Image::new((width, height));
@@ -88,7 +88,22 @@ fn main() {
         }),
     ];
 
-    let camera = Camera::new(90.0, aspect_ratio);
+    let look_from = Vec3::new(3.0, 3.0, 2.0);
+    let look_at = Vec3::new(0.0, 0.0, -1.0);
+    let up = Vec3::new(0.0, 1.0, 0.0);
+
+    let dist_to_focus = (look_from - look_at).length();
+    let aperture = 0.5;
+
+    let camera = Camera::new(
+        look_from,
+        look_at,
+        up,
+        20.0,
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
 
     let samples_per_pixel = 100;
     let max_depth = 50;
