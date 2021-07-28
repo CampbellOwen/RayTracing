@@ -88,7 +88,7 @@ fn main() {
         }),
     ];
 
-    let camera = Camera::new();
+    let camera = Camera::new(90.0, aspect_ratio);
 
     let samples_per_pixel = 100;
     let max_depth = 50;
