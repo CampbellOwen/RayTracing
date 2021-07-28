@@ -1,11 +1,11 @@
 use exporters::ppm::write_image;
-use renderer::{ray_colour, Image, Ray, Vec3};
+use renderer::{ray_colour, Hittable, Image, Ray, Sphere, Vec3};
 
 mod exporters;
 
 fn main() {
     let aspect_ratio = 16.0 / 9.0;
-    let width = 400;
+    let width = 800;
     let height = (width as f32 / aspect_ratio) as u32;
 
     let mut img = Image::new((width, height));
@@ -36,6 +36,33 @@ fn main() {
             z: focal_length,
         };
 
+    let objects: Vec<&dyn Hittable> = vec![
+        &Sphere {
+            center: Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: -1.0,
+            },
+            radius: 0.5,
+        },
+        &Sphere {
+            center: Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: -3.0,
+            },
+            radius: 2.0,
+        },
+        &Sphere {
+            center: Vec3 {
+                x: -5.0,
+                y: 0.0,
+                z: -10.0,
+            },
+            radius: 2.2,
+        },
+    ];
+
     for y in 0..img.size.1 {
         for x in 0..img.size.0 {
             //img.data.push((x as f32) / (img.size.0 - 1) as f32);
@@ -48,7 +75,7 @@ fn main() {
                 origin: origin,
                 dir: lower_left_corner + (horizontal * u) + (vertical * v) - origin,
             };
-            let colour = ray_colour(&ray);
+            let colour = ray_colour(&ray, &objects);
             img.put(x, y, &colour);
         }
     }
