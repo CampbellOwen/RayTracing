@@ -3,7 +3,7 @@ use super::vec3::Vec3;
 #[derive(Debug, Clone)]
 pub struct Image {
     pub size: (u32, u32),
-    pub data: Vec<f32>,
+    pub data: Vec<f64>,
 }
 
 impl Image {

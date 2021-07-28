@@ -8,7 +8,7 @@ mod exporters;
 fn main() {
     let aspect_ratio = 16.0 / 9.0;
     let width = 800;
-    let height = (width as f32 / aspect_ratio) as u32;
+    let height = (width as f64 / aspect_ratio) as u32;
 
     let mut img = Image::new((width, height));
 
@@ -82,14 +82,14 @@ fn main() {
         for x in 0..img.size.0 {
             let mut colour = Vec3::new(0.0, 0.0, 0.0);
             for _ in 0..samples_per_pixel {
-                let u = (x as f32 + rng.gen::<f32>()) / (width - 1) as f32;
-                let v = (y as f32 + rng.gen::<f32>()) / (height - 1) as f32;
+                let u = (x as f64 + rng.gen::<f64>()) / (width - 1) as f64;
+                let v = (y as f64 + rng.gen::<f64>()) / (height - 1) as f64;
 
                 let ray = camera.get_ray(u, v);
                 colour = colour + ray_colour(&ray, &objects.as_slice(), max_depth);
             }
 
-            colour = colour / (samples_per_pixel as f32);
+            colour = colour / (samples_per_pixel as f64);
             img.put(x, y, &colour);
         }
     }

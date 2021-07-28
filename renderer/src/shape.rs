@@ -4,12 +4,12 @@ use super::{dot, HitRecord, Hittable, Material, Ray, Vec3};
 
 pub struct Sphere {
     pub center: Vec3,
-    pub radius: f32,
+    pub radius: f64,
     pub material: Rc<dyn Material>,
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let oc = ray.origin - &self.center;
         //let a = dot(&ray.dir, &ray.dir);
         //let b = 2.0 * dot(&oc, &ray.dir);

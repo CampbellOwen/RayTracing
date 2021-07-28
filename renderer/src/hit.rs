@@ -6,7 +6,7 @@ pub struct HitRecord {
     pub point: Vec3,
     pub normal: Vec3,
     pub material: Rc<dyn Material>,
-    pub t: f32,
+    pub t: f64,
     pub front_face: bool,
 }
 
@@ -16,7 +16,7 @@ impl HitRecord {
         point: &Vec3,
         normal: &Vec3,
         material: Rc<dyn Material>,
-        t: f32,
+        t: f64,
     ) -> HitRecord {
         let mut hr = HitRecord {
             point: *point,
