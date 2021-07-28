@@ -28,7 +28,17 @@ impl Material for Lambertian {
 }
 
 pub struct Metal {
-    pub albedo: Vec3,
+    albedo: Vec3,
+    fuzz: f64,
+}
+
+impl Metal {
+    pub fn new(albedo: Vec3, fuzz: f64) -> Metal {
+        Metal {
+            albedo,
+            fuzz: if fuzz > 1.0 { 1.0 } else { fuzz },
+        }
+    }
 }
 
 impl Material for Metal {
@@ -39,7 +49,7 @@ impl Material for Metal {
             return Some((
                 Ray {
                     origin: hit_record.point,
-                    dir: reflected,
+                    dir: reflected + (Vec3::rand_in_unit_sphere() * self.fuzz),
                 },
                 self.albedo,
             ));

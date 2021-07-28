@@ -20,13 +20,9 @@ fn main() {
         albedo: Vec3::new(0.7, 0.3, 0.3),
     });
 
-    let left_material: Rc<dyn Material> = Rc::new(Metal {
-        albedo: Vec3::new(0.8, 0.8, 0.8),
-    });
+    let left_material: Rc<dyn Material> = Rc::new(Metal::new(Vec3::new(0.8, 0.8, 0.8), 0.3));
 
-    let right_material: Rc<dyn Material> = Rc::new(Metal {
-        albedo: Vec3::new(0.8, 0.6, 0.2),
-    });
+    let right_material: Rc<dyn Material> = Rc::new(Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.0));
 
     let objects: Vec<Box<dyn Hittable>> = vec![
         Box::new(Sphere {
