@@ -16,6 +16,9 @@ pub use shape::Sphere;
 mod hittable;
 pub use hittable::Hittable;
 
+mod camera;
+pub use camera::Camera;
+
 pub fn ray_colour(ray: &Ray, world: &dyn Hittable) -> Vec3 {
     let hr = world.hit(ray, 0.0, 100.0);
     if let Some(hr) = hr {
