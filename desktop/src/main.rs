@@ -7,6 +7,80 @@ use std::{io, io::Write, rc::Rc};
 
 mod exporters;
 
+#[allow(dead_code)]
+fn create_simple_scene() -> Vec<Box<dyn Hittable>> {
+    let ground_material: Rc<dyn Material> = Rc::new(Lambertian {
+        albedo: Vec3::new(0.8, 0.8, 0.0),
+    });
+
+    let center_material: Rc<dyn Material> = Rc::new(Lambertian {
+        albedo: Vec3::new(0.7, 0.3, 0.3),
+    });
+
+    let shiny_metal_material = Rc::new(Metal::new(Vec3::new(0.1, 0.1, 0.1), 0.0));
+
+    let left_material = Rc::new(Dielectric { ior: 1.5 });
+
+    let right_material: Rc<dyn Material> = Rc::new(Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.0));
+
+    vec![
+        Box::new(Sphere {
+            center: Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: -1.0,
+            },
+            radius: 0.5,
+            material: center_material.clone(),
+        }),
+        Box::new(Sphere {
+            center: Vec3 {
+                x: -1.0,
+                y: 0.0,
+                z: -1.0,
+            },
+            radius: 0.5,
+            material: left_material.clone(),
+        }),
+        Box::new(Sphere {
+            center: Vec3 {
+                x: -1.0,
+                y: 0.0,
+                z: -1.0,
+            },
+            radius: -0.49,
+            material: left_material.clone(),
+        }),
+        Box::new(Sphere {
+            center: Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: -1.0,
+            },
+            radius: 0.5,
+            material: right_material.clone(),
+        }),
+        Box::new(Sphere {
+            center: Vec3 {
+                x: 0.3,
+                y: -0.2,
+                z: -0.5,
+            },
+            radius: 0.2,
+            material: shiny_metal_material.clone(),
+        }),
+        Box::new(Sphere {
+            center: Vec3 {
+                x: -0.0,
+                y: -100.5,
+                z: -1.0,
+            },
+            radius: 100.0,
+            material: ground_material.clone(),
+        }),
+    ]
+}
+
 fn create_random_scene() -> Vec<Box<dyn Hittable>> {
     let mut world: Vec<Box<dyn Hittable>> = Vec::new();
     let ground_material = Rc::new(Lambertian {
@@ -96,88 +170,13 @@ fn main() {
 
     let mut img = Image::new((width, height));
 
-    let ground_material: Rc<dyn Material> = Rc::new(Lambertian {
-        albedo: Vec3::new(0.8, 0.8, 0.0),
-    });
-
-    let center_material: Rc<dyn Material> = Rc::new(Lambertian {
-        albedo: Vec3::new(0.7, 0.3, 0.3),
-    });
-
-    let shiny_metal_material = Rc::new(Metal::new(Vec3::new(0.1, 0.1, 0.1), 0.0));
-
-    //let center_material = Rc::new(Dielectric { ior: 1.5 });
-
-    //let left_material: Rc<dyn Material> = Rc::new(Metal::new(Vec3::new(0.8, 0.8, 0.8), 0.3));
-    let left_material = Rc::new(Dielectric { ior: 1.5 });
-
-    let right_material: Rc<dyn Material> = Rc::new(Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.0));
-
-    //let objects: Vec<Box<dyn Hittable>> = vec![
-    //    Box::new(Sphere {
-    //        center: Vec3 {
-    //            x: 0.0,
-    //            y: 0.0,
-    //            z: -1.0,
-    //        },
-    //        radius: 0.5,
-    //        material: center_material.clone(),
-    //    }),
-    //    Box::new(Sphere {
-    //        center: Vec3 {
-    //            x: -1.0,
-    //            y: 0.0,
-    //            z: -1.0,
-    //        },
-    //        radius: 0.5,
-    //        material: left_material.clone(),
-    //    }),
-    //    Box::new(Sphere {
-    //        center: Vec3 {
-    //            x: -1.0,
-    //            y: 0.0,
-    //            z: -1.0,
-    //        },
-    //        radius: -0.49,
-    //        material: left_material.clone(),
-    //    }),
-    //    Box::new(Sphere {
-    //        center: Vec3 {
-    //            x: 1.0,
-    //            y: 0.0,
-    //            z: -1.0,
-    //        },
-    //        radius: 0.5,
-    //        material: right_material.clone(),
-    //    }),
-    //    Box::new(Sphere {
-    //        center: Vec3 {
-    //            x: 0.3,
-    //            y: -0.2,
-    //            z: -0.5,
-    //        },
-    //        radius: 0.2,
-    //        material: shiny_metal_material.clone(),
-    //    }),
-    //    Box::new(Sphere {
-    //        center: Vec3 {
-    //            x: -0.0,
-    //            y: -100.5,
-    //            z: -1.0,
-    //        },
-    //        radius: 100.0,
-    //        material: ground_material.clone(),
-    //    }),
-    //];
-
     let world = create_random_scene();
 
     let look_from = Vec3::new(13.0, 2.0, 3.0);
-    //let look_from = Vec3::new(0.0, 0.0, 1.0);
     let look_at = Vec3::new(0.0, 0.0, 0.0);
     let up = Vec3::new(0.0, 1.0, 0.0);
 
-    let dist_to_focus = 10.0; //(look_from - look_at).length();
+    let dist_to_focus = 10.0;
     let aperture = 0.1;
 
     let camera = Camera::new(
