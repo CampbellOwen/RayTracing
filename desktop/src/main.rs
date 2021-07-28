@@ -1,7 +1,7 @@
 use exporters::ppm::write_image;
 use rand::Rng;
-use renderer::{ray_colour, Camera, Hittable, Image, Sphere, Vec3};
-use std::{io, io::Write};
+use renderer::{ray_colour, Camera, Hittable, Image, Lambertian, Material, Sphere, Vec3};
+use std::{io, io::Write, rc::Rc};
 
 mod exporters;
 
@@ -12,31 +12,38 @@ fn main() {
 
     let mut img = Image::new((width, height));
 
-    let objects: Vec<&dyn Hittable> = vec![
-        &Sphere {
+    let lambertian_material: Rc<dyn Material> = Rc::new(Lambertian {
+        albedo: Vec3::new(0.0, 0.0, 0.0),
+    });
+
+    let objects: Vec<Box<dyn Hittable>> = vec![
+        Box::new(Sphere {
             center: Vec3 {
                 x: 0.0,
                 y: 0.0,
                 z: -1.0,
             },
             radius: 0.5,
-        },
-        &Sphere {
+            material: lambertian_material.clone(),
+        }),
+        Box::new(Sphere {
             center: Vec3 {
                 x: 1.0,
                 y: 0.0,
                 z: -3.0,
             },
             radius: 2.0,
-        },
-        &Sphere {
+            material: lambertian_material.clone(),
+        }),
+        Box::new(Sphere {
             center: Vec3 {
                 x: -0.0,
                 y: -100.5,
                 z: -1.0,
             },
             radius: 100.0,
-        },
+            material: lambertian_material.clone(),
+        }),
     ];
 
     let camera = Camera::new();
@@ -58,7 +65,7 @@ fn main() {
                 let v = (y as f32 + rng.gen::<f32>()) / (height - 1) as f32;
 
                 let ray = camera.get_ray(u, v);
-                colour = colour + ray_colour(&ray, &objects, max_depth);
+                colour = colour + ray_colour(&ray, &objects.as_slice(), max_depth);
             }
 
             colour = colour / (samples_per_pixel as f32);

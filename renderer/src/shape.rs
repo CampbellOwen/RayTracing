@@ -1,8 +1,11 @@
-use super::{dot, HitRecord, Hittable, Ray, Vec3};
+use std::rc::Rc;
+
+use super::{dot, HitRecord, Hittable, Material, Ray, Vec3};
 
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
+    pub material: Rc<dyn Material>,
 }
 
 impl Hittable for Sphere {
@@ -33,7 +36,7 @@ impl Hittable for Sphere {
         let t = root;
         let point = ray.at(t);
         let normal = (point - self.center) / self.radius;
-        let hr = HitRecord::new(ray, &point, &normal, t);
+        let hr = HitRecord::new(ray, &point, &normal, self.material.clone(), t);
 
         Some(hr)
     }

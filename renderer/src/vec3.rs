@@ -13,6 +13,12 @@ impl Vec3 {
         Vec3 { x: x, y: y, z: z }
     }
 
+    pub fn near_zero(&self) -> bool {
+        let s = 1e-8;
+
+        return (self.x.abs() < s) && (self.y.abs() < s) && (self.z.abs() < s);
+    }
+
     pub fn random() -> Vec3 {
         let mut rng = rand::thread_rng();
         Vec3::new(rng.gen(), rng.gen(), rng.gen())
@@ -35,6 +41,10 @@ impl Vec3 {
                 return point;
             }
         }
+    }
+
+    pub fn rand_unit_vector() -> Vec3 {
+        Vec3::rand_in_unit_sphere().unit()
     }
 
     pub fn length_squared(&self) -> f32 {

@@ -19,6 +19,9 @@ pub use hittable::Hittable;
 mod camera;
 pub use camera::Camera;
 
+mod material;
+pub use material::{Lambertian, Material};
+
 pub fn ray_colour(ray: &Ray, world: &dyn Hittable, depth: i32) -> Vec3 {
     if depth <= 0 {
         return Vec3::new(0.0, 0.0, 0.0);

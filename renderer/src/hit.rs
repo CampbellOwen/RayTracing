@@ -1,17 +1,27 @@
-use super::{dot, Ray, Vec3};
+use std::rc::Rc;
+
+use super::{dot, Material, Ray, Vec3};
 
 pub struct HitRecord {
     pub point: Vec3,
     pub normal: Vec3,
+    pub material: Rc<dyn Material>,
     pub t: f32,
     pub front_face: bool,
 }
 
 impl HitRecord {
-    pub fn new(ray: &Ray, point: &Vec3, normal: &Vec3, t: f32) -> HitRecord {
+    pub fn new(
+        ray: &Ray,
+        point: &Vec3,
+        normal: &Vec3,
+        material: Rc<dyn Material>,
+        t: f32,
+    ) -> HitRecord {
         let mut hr = HitRecord {
             point: *point,
             normal: *normal,
+            material,
             t,
             front_face: true,
         };
