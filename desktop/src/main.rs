@@ -1,4 +1,5 @@
 use exporters::ppm::write_image;
+use rand::Rng;
 use renderer::{ray_colour, Camera, Hittable, Image, Sphere, Vec3};
 
 mod exporters;
@@ -39,13 +40,22 @@ fn main() {
 
     let camera = Camera::new();
 
+    let samples_per_pixel = 100;
+
+    let mut rng = rand::thread_rng();
+
     for y in 0..img.size.1 {
         for x in 0..img.size.0 {
-            let u = x as f32 / (width - 1) as f32;
-            let v = y as f32 / (height - 1) as f32;
+            let mut colour = Vec3::new(0.0, 0.0, 0.0);
+            for _ in 0..samples_per_pixel {
+                let u = (x as f32 + rng.gen::<f32>()) / (width - 1) as f32;
+                let v = (y as f32 + rng.gen::<f32>()) / (height - 1) as f32;
 
-            let ray = camera.get_ray(u, v);
-            let colour = ray_colour(&ray, &objects);
+                let ray = camera.get_ray(u, v);
+                colour = colour + ray_colour(&ray, &objects);
+            }
+
+            colour = colour / (samples_per_pixel as f32);
             img.put(x, y, &colour);
         }
     }
