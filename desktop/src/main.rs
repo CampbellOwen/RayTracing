@@ -1,6 +1,7 @@
 use exporters::ppm::write_image;
 use rand::Rng;
 use renderer::{ray_colour, Camera, Hittable, Image, Sphere, Vec3};
+use std::{io, io::Write};
 
 mod exporters;
 
@@ -45,6 +46,10 @@ fn main() {
     let mut rng = rand::thread_rng();
 
     for y in 0..img.size.1 {
+        if y % 10 == 0 {
+            print!("\rRendered {:0>4} lines", y);
+            let _ = io::stdout().flush();
+        }
         for x in 0..img.size.0 {
             let mut colour = Vec3::new(0.0, 0.0, 0.0);
             for _ in 0..samples_per_pixel {
@@ -60,5 +65,6 @@ fn main() {
         }
     }
 
+    println!("\nSaving image");
     write_image(&img, "output.ppm").expect("Writing image failed");
 }
