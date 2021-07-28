@@ -9,7 +9,7 @@ mod exporters;
 
 fn main() {
     let aspect_ratio = 16.0 / 9.0;
-    let width = 800;
+    let width = 400;
     let height = (width as f64 / aspect_ratio) as u32;
 
     let mut img = Image::new((width, height));
@@ -18,13 +18,16 @@ fn main() {
         albedo: Vec3::new(0.8, 0.8, 0.0),
     });
 
-    //let center_material: Rc<dyn Material> = Rc::new(Lambertian {
-    //    albedo: Vec3::new(0.7, 0.3, 0.3),
-    //});
+    let center_material: Rc<dyn Material> = Rc::new(Lambertian {
+        albedo: Vec3::new(0.7, 0.3, 0.3),
+    });
 
-    let center_material = Rc::new(Dielectric { ior: 1.5 });
+    let shiny_metal_material = Rc::new(Metal::new(Vec3::new(0.1, 0.1, 0.1), 0.0));
 
-    let left_material: Rc<dyn Material> = Rc::new(Metal::new(Vec3::new(0.8, 0.8, 0.8), 0.3));
+    //let center_material = Rc::new(Dielectric { ior: 1.5 });
+
+    //let left_material: Rc<dyn Material> = Rc::new(Metal::new(Vec3::new(0.8, 0.8, 0.8), 0.3));
+    let left_material = Rc::new(Dielectric { ior: 1.5 });
 
     let right_material: Rc<dyn Material> = Rc::new(Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.0));
 
@@ -49,12 +52,30 @@ fn main() {
         }),
         Box::new(Sphere {
             center: Vec3 {
+                x: -1.0,
+                y: 0.0,
+                z: -1.0,
+            },
+            radius: -0.4,
+            material: left_material.clone(),
+        }),
+        Box::new(Sphere {
+            center: Vec3 {
                 x: 1.0,
                 y: 0.0,
                 z: -1.0,
             },
             radius: 0.5,
             material: right_material.clone(),
+        }),
+        Box::new(Sphere {
+            center: Vec3 {
+                x: 0.3,
+                y: -0.2,
+                z: -0.5,
+            },
+            radius: 0.2,
+            material: shiny_metal_material.clone(),
         }),
         Box::new(Sphere {
             center: Vec3 {
