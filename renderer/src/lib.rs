@@ -20,7 +20,7 @@ mod camera;
 pub use camera::Camera;
 
 mod material;
-pub use material::{Lambertian, Material, Metal};
+pub use material::{Dielectric, Lambertian, Material, Metal};
 
 pub fn ray_colour(ray: &Ray, world: &dyn Hittable, depth: i32) -> Vec3 {
     if depth <= 0 {

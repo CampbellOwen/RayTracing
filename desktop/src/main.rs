@@ -1,6 +1,8 @@
 use exporters::ppm::write_image;
 use rand::Rng;
-use renderer::{ray_colour, Camera, Hittable, Image, Lambertian, Material, Metal, Sphere, Vec3};
+use renderer::{
+    ray_colour, Camera, Dielectric, Hittable, Image, Lambertian, Material, Metal, Sphere, Vec3,
+};
 use std::{io, io::Write, rc::Rc};
 
 mod exporters;
@@ -16,9 +18,11 @@ fn main() {
         albedo: Vec3::new(0.8, 0.8, 0.0),
     });
 
-    let center_material: Rc<dyn Material> = Rc::new(Lambertian {
-        albedo: Vec3::new(0.7, 0.3, 0.3),
-    });
+    //let center_material: Rc<dyn Material> = Rc::new(Lambertian {
+    //    albedo: Vec3::new(0.7, 0.3, 0.3),
+    //});
+
+    let center_material = Rc::new(Dielectric { ior: 1.5 });
 
     let left_material: Rc<dyn Material> = Rc::new(Metal::new(Vec3::new(0.8, 0.8, 0.8), 0.3));
 

@@ -83,6 +83,14 @@ impl Vec3 {
         }
     }
 
+    pub fn refract(&self, n: &Vec3, etai_over_etat: f64) -> Vec3 {
+        let cos_theta = f64::min(dot(&-self, n), 1.0);
+        let r_out_perp = (self + (n * cos_theta)) * etai_over_etat;
+        let r_out_parallel = n * (-(1.0 - r_out_perp.length_squared()).abs().sqrt());
+
+        r_out_perp + r_out_parallel
+    }
+
     pub fn origin() -> Vec3 {
         Vec3 {
             x: 0.0,
@@ -105,6 +113,18 @@ impl ops::Add for Vec3 {
 
     fn add(self, _rhs: Self) -> Self {
         Self {
+            x: self.x + _rhs.x,
+            y: self.y + _rhs.y,
+            z: self.z + _rhs.z,
+        }
+    }
+}
+
+impl ops::Add<Vec3> for &Vec3 {
+    type Output = Vec3;
+
+    fn add(self, _rhs: Vec3) -> Vec3 {
+        Vec3 {
             x: self.x + _rhs.x,
             y: self.y + _rhs.y,
             z: self.z + _rhs.z,
@@ -195,6 +215,17 @@ impl ops::Neg for Vec3 {
 
     fn neg(self) -> Self {
         Self {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+        }
+    }
+}
+
+impl ops::Neg for &Vec3 {
+    type Output = Vec3;
+    fn neg(self) -> Vec3 {
+        Vec3 {
             x: -self.x,
             y: -self.y,
             z: -self.z,
