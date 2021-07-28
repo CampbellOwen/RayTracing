@@ -1,5 +1,5 @@
 use exporters::ppm::write_image;
-use renderer::{ray_colour, Camera, Hittable, Image, Ray, Sphere, Vec3};
+use renderer::{ray_colour, Camera, Hittable, Image, Sphere, Vec3};
 
 mod exporters;
 
@@ -9,10 +9,6 @@ fn main() {
     let height = (width as f32 / aspect_ratio) as u32;
 
     let mut img = Image::new((width, height));
-
-    // Camera
-    let viewport_height = 2.0;
-    let viewport_width = aspect_ratio * viewport_height;
 
     let objects: Vec<&dyn Hittable> = vec![
         &Sphere {
