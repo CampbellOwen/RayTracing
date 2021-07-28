@@ -71,6 +71,18 @@ impl Vec3 {
         self / self.length()
     }
 
+    pub fn reflect(&self, n: &Vec3) -> Vec3 {
+        self - (n * dot(self, n) * 2.0)
+    }
+
+    pub fn sqrt(&self) -> Vec3 {
+        Vec3 {
+            x: self.x.sqrt(),
+            y: self.y.sqrt(),
+            z: self.z.sqrt(),
+        }
+    }
+
     pub fn origin() -> Vec3 {
         Vec3 {
             x: 0.0,
@@ -135,11 +147,34 @@ impl ops::Sub<&Vec3> for Vec3 {
     }
 }
 
+impl ops::Mul<Vec3> for Vec3 {
+    type Output = Vec3;
+    fn mul(self, _rhs: Vec3) -> Vec3 {
+        Vec3 {
+            x: self.x * _rhs.x,
+            y: self.y * _rhs.y,
+            z: self.z * _rhs.z,
+        }
+    }
+}
+
 impl ops::Mul<f32> for Vec3 {
     type Output = Self;
 
     fn mul(self, _rhs: f32) -> Self {
         Self {
+            x: self.x * _rhs,
+            y: self.y * _rhs,
+            z: self.z * _rhs,
+        }
+    }
+}
+
+impl ops::Mul<f32> for &Vec3 {
+    type Output = Vec3;
+
+    fn mul(self, _rhs: f32) -> Vec3 {
+        Vec3 {
             x: self.x * _rhs,
             y: self.y * _rhs,
             z: self.z * _rhs,

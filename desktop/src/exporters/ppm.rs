@@ -27,9 +27,11 @@ pub fn write_image(img: &Image, location: &str) -> Result<(), io::Error> {
                     ))
                 }
             };
-            let r = (pixel.x.sqrt().clamp(0.0, 0.999) * 256.0) as u32;
-            let g = (pixel.y.sqrt().clamp(0.0, 0.999) * 256.0) as u32;
-            let b = (pixel.z.sqrt().clamp(0.0, 0.999) * 256.0) as u32;
+
+            let pixel = pixel.sqrt();
+            let r = (pixel.x.clamp(0.0, 0.999) * 256.0) as u32;
+            let g = (pixel.y.clamp(0.0, 0.999) * 256.0) as u32;
+            let b = (pixel.z.clamp(0.0, 0.999) * 256.0) as u32;
 
             write!(file, "{} {} {}\n", r, g, b)?;
         }

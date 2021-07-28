@@ -20,7 +20,7 @@ mod camera;
 pub use camera::Camera;
 
 mod material;
-pub use material::{Lambertian, Material};
+pub use material::{Lambertian, Material, Metal};
 
 pub fn ray_colour(ray: &Ray, world: &dyn Hittable, depth: i32) -> Vec3 {
     if depth <= 0 {
@@ -28,16 +28,12 @@ pub fn ray_colour(ray: &Ray, world: &dyn Hittable, depth: i32) -> Vec3 {
     }
 
     if let Some(hr) = world.hit(ray, 0.001, 100000.0) {
-        let target = hr.normal + Vec3::rand_in_unit_sphere().unit();
+        //let target = hr.normal + Vec3::rand_in_unit_sphere().unit();
 
-        return ray_colour(
-            &Ray {
-                origin: hr.point,
-                dir: target,
-            },
-            world,
-            depth - 1,
-        ) * 0.5;
+        if let Some((scattered, attenuation)) = hr.material.scatter(ray, &hr) {
+            return attenuation * ray_colour(&scattered, world, depth - 1) * 0.5;
+        }
+        return Vec3::new(0.0, 0.0, 0.0);
 
         //return Vec3 {
         //    x: hr.normal.x + 1.0,

@@ -1,6 +1,6 @@
 use exporters::ppm::write_image;
 use rand::Rng;
-use renderer::{ray_colour, Camera, Hittable, Image, Lambertian, Material, Sphere, Vec3};
+use renderer::{ray_colour, Camera, Hittable, Image, Lambertian, Material, Metal, Sphere, Vec3};
 use std::{io, io::Write, rc::Rc};
 
 mod exporters;
@@ -12,8 +12,20 @@ fn main() {
 
     let mut img = Image::new((width, height));
 
-    let lambertian_material: Rc<dyn Material> = Rc::new(Lambertian {
-        albedo: Vec3::new(0.0, 0.0, 0.0),
+    let ground_material: Rc<dyn Material> = Rc::new(Lambertian {
+        albedo: Vec3::new(0.8, 0.8, 0.0),
+    });
+
+    let center_material: Rc<dyn Material> = Rc::new(Lambertian {
+        albedo: Vec3::new(0.7, 0.3, 0.3),
+    });
+
+    let left_material: Rc<dyn Material> = Rc::new(Metal {
+        albedo: Vec3::new(0.8, 0.8, 0.8),
+    });
+
+    let right_material: Rc<dyn Material> = Rc::new(Metal {
+        albedo: Vec3::new(0.8, 0.6, 0.2),
     });
 
     let objects: Vec<Box<dyn Hittable>> = vec![
@@ -24,16 +36,25 @@ fn main() {
                 z: -1.0,
             },
             radius: 0.5,
-            material: lambertian_material.clone(),
+            material: center_material.clone(),
+        }),
+        Box::new(Sphere {
+            center: Vec3 {
+                x: -1.0,
+                y: 0.0,
+                z: -1.0,
+            },
+            radius: 0.5,
+            material: left_material.clone(),
         }),
         Box::new(Sphere {
             center: Vec3 {
                 x: 1.0,
                 y: 0.0,
-                z: -3.0,
+                z: -1.0,
             },
-            radius: 2.0,
-            material: lambertian_material.clone(),
+            radius: 0.5,
+            material: right_material.clone(),
         }),
         Box::new(Sphere {
             center: Vec3 {
@@ -42,7 +63,7 @@ fn main() {
                 z: -1.0,
             },
             radius: 100.0,
-            material: lambertian_material.clone(),
+            material: ground_material.clone(),
         }),
     ];
 
