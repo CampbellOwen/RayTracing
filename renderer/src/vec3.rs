@@ -1,3 +1,4 @@
+use rand::Rng;
 use std::ops;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -11,6 +12,31 @@ impl Vec3 {
     pub fn new(x: f32, y: f32, z: f32) -> Vec3 {
         Vec3 { x: x, y: y, z: z }
     }
+
+    pub fn random() -> Vec3 {
+        let mut rng = rand::thread_rng();
+        Vec3::new(rng.gen(), rng.gen(), rng.gen())
+    }
+
+    pub fn rand_in_range(min: f32, max: f32) -> Vec3 {
+        let mut rng = rand::thread_rng();
+
+        Vec3::new(
+            rng.gen_range(min..max),
+            rng.gen_range(min..max),
+            rng.gen_range(min..max),
+        )
+    }
+
+    pub fn rand_in_unit_sphere() -> Vec3 {
+        loop {
+            let point = Vec3::rand_in_range(-1.0, 1.0);
+            if point.length() < 1.0 {
+                return point;
+            }
+        }
+    }
+
     pub fn length_squared(&self) -> f32 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
