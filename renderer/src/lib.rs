@@ -19,14 +19,28 @@ pub use hittable::Hittable;
 mod camera;
 pub use camera::Camera;
 
-pub fn ray_colour(ray: &Ray, world: &dyn Hittable) -> Vec3 {
-    let hr = world.hit(ray, 0.0, 100.0);
-    if let Some(hr) = hr {
-        return Vec3 {
-            x: hr.normal.x + 1.0,
-            y: hr.normal.y + 1.0,
-            z: hr.normal.z + 1.0,
-        } * 0.5;
+pub fn ray_colour(ray: &Ray, world: &dyn Hittable, depth: i32) -> Vec3 {
+    if depth <= 0 {
+        return Vec3::new(0.0, 0.0, 0.0);
+    }
+
+    if let Some(hr) = world.hit(ray, 0.001, 100000.0) {
+        let target = hr.normal + Vec3::rand_in_unit_sphere().unit();
+
+        return ray_colour(
+            &Ray {
+                origin: hr.point,
+                dir: target,
+            },
+            world,
+            depth - 1,
+        ) * 0.5;
+
+        //return Vec3 {
+        //    x: hr.normal.x + 1.0,
+        //    y: hr.normal.y + 1.0,
+        //    z: hr.normal.z + 1.0,
+        //} * 0.5;
     }
 
     let unit_dir = ray.dir.unit();

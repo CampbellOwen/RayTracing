@@ -42,6 +42,7 @@ fn main() {
     let camera = Camera::new();
 
     let samples_per_pixel = 100;
+    let max_depth = 50;
 
     let mut rng = rand::thread_rng();
 
@@ -57,7 +58,7 @@ fn main() {
                 let v = (y as f32 + rng.gen::<f32>()) / (height - 1) as f32;
 
                 let ray = camera.get_ray(u, v);
-                colour = colour + ray_colour(&ray, &objects);
+                colour = colour + ray_colour(&ray, &objects, max_depth);
             }
 
             colour = colour / (samples_per_pixel as f32);
