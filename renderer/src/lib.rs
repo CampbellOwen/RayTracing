@@ -31,7 +31,7 @@ pub fn ray_colour(ray: &Ray, world: &dyn Hittable, depth: i32) -> Vec3 {
         //let target = hr.normal + Vec3::rand_in_unit_sphere().unit();
 
         if let Some((scattered, attenuation)) = hr.material.scatter(ray, &hr) {
-            return attenuation * ray_colour(&scattered, world, depth - 1) * 0.5;
+            return attenuation * ray_colour(&scattered, world, depth - 1);
         }
         return Vec3::new(0.0, 0.0, 0.0);
 
