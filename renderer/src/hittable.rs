@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use super::{HitRecord, Ray, AABB};
 
 pub trait Hittable {
@@ -5,7 +7,7 @@ pub trait Hittable {
     fn bounding_box(&self, time_0: f64, time_1: f64) -> Option<AABB>;
 }
 
-impl Hittable for &[Box<dyn Hittable>] {
+impl Hittable for &[Rc<dyn Hittable>] {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         self.iter().fold(None, |hr, object| {
             if let Some(prev_hit) = &hr {
@@ -50,7 +52,7 @@ mod tests {
         let material = Rc::new(Lambertian {
             albedo: Vec3::new(0.0, 0.0, 0.0),
         });
-        let world: Vec<Box<dyn Hittable>> = vec![Box::new(Sphere {
+        let world: Vec<Rc<dyn Hittable>> = vec![Rc::new(Sphere {
             center: Vec3::new(0.0, 0.0, 0.0),
             radius: 0.5,
             material: material.clone(),
@@ -76,13 +78,13 @@ mod tests {
         let material = Rc::new(Lambertian {
             albedo: Vec3::new(0.0, 0.0, 0.0),
         });
-        let world: Vec<Box<dyn Hittable>> = vec![
-            Box::new(Sphere {
+        let world: Vec<Rc<dyn Hittable>> = vec![
+            Rc::new(Sphere {
                 center: Vec3::new(0.0, 0.0, 0.0),
                 radius: 0.5,
                 material: material.clone(),
             }),
-            Box::new(Sphere {
+            Rc::new(Sphere {
                 center: Vec3::new(0.0, 0.0, 0.0),
                 radius: 0.2,
                 material: material.clone(),
@@ -109,13 +111,13 @@ mod tests {
         let material = Rc::new(Lambertian {
             albedo: Vec3::new(0.0, 0.0, 0.0),
         });
-        let world: Vec<Box<dyn Hittable>> = vec![
-            Box::new(Sphere {
+        let world: Vec<Rc<dyn Hittable>> = vec![
+            Rc::new(Sphere {
                 center: Vec3::new(-0.5, -0.5, -0.5),
                 radius: 0.5,
                 material: material.clone(),
             }),
-            Box::new(Sphere {
+            Rc::new(Sphere {
                 center: Vec3::new(0.5, 0.5, 0.5),
                 radius: 0.5,
                 material: material.clone(),

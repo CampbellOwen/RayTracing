@@ -1,6 +1,6 @@
 use super::{Ray, Vec3};
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AABB {
     pub min: Vec3,
     pub max: Vec3,
