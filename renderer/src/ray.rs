@@ -2,6 +2,7 @@ use super::vec3::Vec3;
 pub struct Ray {
     pub origin: Vec3,
     pub dir: Vec3,
+    pub time: f64,
 }
 
 impl Ray {

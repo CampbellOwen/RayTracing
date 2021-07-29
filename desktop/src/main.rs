@@ -1,7 +1,8 @@
 use exporters::ppm::write_image;
 use rand::Rng;
 use renderer::{
-    ray_colour, Camera, Dielectric, Hittable, Image, Lambertian, Material, Metal, Sphere, Vec3,
+    ray_colour, Camera, Dielectric, Hittable, Image, Lambertian, Material, Metal, MovingSphere,
+    Sphere, Vec3,
 };
 use std::{io, io::Write, rc::Rc};
 
@@ -109,8 +110,14 @@ fn create_random_scene() -> Vec<Box<dyn Hittable>> {
                     // Diffuse material
                     let albedo = Vec3::random() * Vec3::random();
                     let material = Rc::new(Lambertian { albedo });
-                    world.push(Box::new(Sphere {
-                        center,
+
+                    let center_2 = center + Vec3::new(0.0, rng.gen_range(0.0..0.5), 0.0);
+
+                    world.push(Box::new(MovingSphere {
+                        center_0: center,
+                        center_1: center_2,
+                        time_0: 0.0,
+                        time_1: 1.0,
                         radius: 0.2,
                         material,
                     }));
@@ -165,7 +172,7 @@ fn create_random_scene() -> Vec<Box<dyn Hittable>> {
 
 fn main() {
     let aspect_ratio = 16.0 / 9.0;
-    let width = 1080;
+    let width = 800;
     let height = (width as f64 / aspect_ratio) as u32;
 
     let mut img = Image::new((width, height));
@@ -187,6 +194,8 @@ fn main() {
         aspect_ratio,
         aperture,
         dist_to_focus,
+        0.0,
+        1.0,
     );
 
     let samples_per_pixel = 100;

@@ -1,3 +1,5 @@
+use rand::Rng;
+
 use super::{Ray, Vec3};
 
 pub struct Camera {
@@ -8,6 +10,8 @@ pub struct Camera {
     u: Vec3,
     v: Vec3,
     lens_radius: f64,
+    time_0: f64,
+    time_1: f64,
 }
 
 impl Camera {
@@ -19,6 +23,8 @@ impl Camera {
         aspect_ratio: f64,
         aperture: f64,
         focus_dist: f64,
+        time_0: f64,
+        time_1: f64,
     ) -> Camera {
         let theta = vfov.to_radians();
         let h = (theta / 2.0).tan();
@@ -43,18 +49,49 @@ impl Camera {
             u,
             v,
             lens_radius: aperture / 2.0,
+            time_0,
+            time_1,
         }
+    }
+
+    pub fn new_instant(
+        look_from: Vec3,
+        look_at: Vec3,
+        up: Vec3,
+        vfov: f64,
+        aspect_ratio: f64,
+        aperture: f64,
+        focus_dist: f64,
+    ) -> Camera {
+        Camera::new(
+            look_from,
+            look_at,
+            up,
+            vfov,
+            aspect_ratio,
+            aperture,
+            focus_dist,
+            0.0,
+            0.0,
+        )
     }
 
     pub fn get_ray(&self, s: f64, t: f64) -> Ray {
         let random_in_lens = Vec3::rand_in_unit_sphere() * self.lens_radius;
         let offset = (self.u * random_in_lens.x) + (self.v * random_in_lens.y);
 
+        let time = if (self.time_1 - self.time_0) > 0.000001 {
+            rand::thread_rng().gen_range(self.time_0..self.time_1)
+        } else {
+            0.0
+        };
+
         Ray {
             origin: self.origin + offset,
             dir: self.lower_left_corner + (self.horizontal * s) + (self.vertical * t)
                 - self.origin
                 - offset,
+            time,
         }
     }
 }
