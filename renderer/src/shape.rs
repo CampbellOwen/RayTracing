@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use super::{dot, HitRecord, Hittable, Material, Ray, Vec3};
+use super::{dot, HitRecord, Hittable, Material, Ray, Vec3, AABB};
 
 pub struct Sphere {
     pub center: Vec3,
@@ -61,6 +61,12 @@ impl Hittable for Sphere {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         spherical_hit(self, ray, t_min, t_max)
     }
+    fn bounding_box(&self, _: f64, _: f64) -> Option<crate::AABB> {
+        Some(AABB {
+            min: self.center - Vec3::new(self.radius, self.radius, self.radius),
+            max: self.center + Vec3::new(self.radius, self.radius, self.radius),
+        })
+    }
 }
 
 pub struct MovingSphere {
@@ -91,5 +97,22 @@ impl Spherical for MovingSphere {
 impl Hittable for MovingSphere {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         spherical_hit(self, ray, t_min, t_max)
+    }
+    fn bounding_box(&self, time_0: f64, time_1: f64) -> Option<AABB> {
+        let center_0 = self.center(time_0);
+        let center_1 = self.center(time_1);
+
+        let radius_vec = Vec3::new(self.radius, self.radius, self.radius);
+
+        Some(AABB::surrounding_box(
+            &AABB {
+                min: center_0 - radius_vec,
+                max: center_0 + radius_vec,
+            },
+            &AABB {
+                min: center_1 - radius_vec,
+                max: center_1 + radius_vec,
+            },
+        ))
     }
 }

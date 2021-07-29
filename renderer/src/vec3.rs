@@ -265,6 +265,19 @@ impl ops::DivAssign<f64> for Vec3 {
     }
 }
 
+impl ops::Index<usize> for Vec3 {
+    type Output = f64;
+
+    fn index<'a>(&'a self, index: usize) -> &'a f64 {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Index out of bounds"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{cross, dot, Vec3};

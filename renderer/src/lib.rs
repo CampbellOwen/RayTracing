@@ -22,6 +22,9 @@ pub use camera::Camera;
 mod material;
 pub use material::{Dielectric, Lambertian, Material, Metal};
 
+mod bounding_box;
+pub use bounding_box::AABB;
+
 pub fn ray_colour(ray: &Ray, world: &dyn Hittable, depth: i32) -> Vec3 {
     if depth <= 0 {
         return Vec3::new(0.0, 0.0, 0.0);
