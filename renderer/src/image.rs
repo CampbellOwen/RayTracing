@@ -1,4 +1,4 @@
-use super::vec3::Vec3;
+use super::{Texture, Vec3};
 
 #[derive(Debug, Clone)]
 pub struct Image {
@@ -33,5 +33,20 @@ impl Image {
         self.data[index] = colour.x;
         self.data[index + 1] = colour.y;
         self.data[index + 2] = colour.z;
+    }
+}
+
+impl Texture for Image {
+    fn sample(&self, u: f64, v: f64, _: &Vec3) -> Vec3 {
+        let u = u.clamp(0.0, 1.0);
+        let v = 1.0 - v.clamp(0.0, 1.0); // Flip vertical
+
+        let x = (self.size.0 as f64 * u) as u32;
+        let y = (self.size.1 as f64 * v) as u32;
+
+        let x = x.clamp(0, self.size.0 - 1);
+        let y = y.clamp(0, self.size.1 - 1);
+
+        self.get(x, y).unwrap()
     }
 }

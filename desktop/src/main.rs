@@ -1,4 +1,5 @@
 use exporters::ppm::write_image;
+extern crate rand;
 use rand::Rng;
 use renderer::{
     ray_colour, BVHNode, Camera, CheckerTexture, Dielectric, Hittable, Image, Lambertian, Material,
@@ -7,6 +8,8 @@ use renderer::{
 use std::{io, io::Write, rc::Rc};
 
 mod exporters;
+
+extern crate image;
 
 #[allow(dead_code)]
 fn create_simple_scene() -> (Vec<Rc<dyn Hittable>>, Camera) {
@@ -17,7 +20,9 @@ fn create_simple_scene() -> (Vec<Rc<dyn Hittable>>, Camera) {
         )),
     });
 
-    let center_material: Rc<dyn Material> = Rc::new(Lambertian::new(Vec3::new(0.7, 0.3, 0.3)));
+    let center_material: Rc<dyn Material> = Rc::new(Lambertian {
+        albedo: Rc::new(load_texture("textures/earthmap.jpg").unwrap()),
+    });
 
     let shiny_metal_material = Rc::new(Metal::new(Vec3::new(0.1, 0.1, 0.1), 0.0));
 
@@ -251,6 +256,27 @@ fn two_spheres() -> (Vec<Rc<dyn Hittable>>, Camera) {
     );
 }
 
+fn load_texture(filename: &str) -> Option<Image> {
+    let tex = image::open(filename).ok()?.into_rgb8();
+    let mut tex_image = Image::new(tex.dimensions());
+    for y in 0..tex.dimensions().1 {
+        for x in 0..tex.dimensions().0 {
+            let pixel = tex.get_pixel(x, y);
+            tex_image.put(
+                x,
+                y,
+                &Vec3::new(
+                    pixel[0] as f64 / 255.0,
+                    pixel[1] as f64 / 255.0,
+                    pixel[2] as f64 / 255.0,
+                ),
+            );
+        }
+    }
+
+    Some(tex_image)
+}
+
 fn main() {
     let width = 800;
     let aspect_ratio = 16.0 / 9.0;
@@ -259,8 +285,8 @@ fn main() {
     let mut img = Image::new((width, height));
 
     //let (world, camera) = create_random_scene();
-    //let (world, camera) = create_simple_scene();
-    let (world, camera) = two_spheres();
+    let (world, camera) = create_simple_scene();
+    //let (world, camera) = two_spheres();
 
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
 
