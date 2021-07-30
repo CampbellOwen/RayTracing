@@ -31,33 +31,28 @@ pub use bvh::BVHNode;
 mod texture;
 pub use texture::{CheckerTexture, SolidColour, Texture};
 
-pub fn ray_colour(ray: &Ray, world: &dyn Hittable, depth: i32) -> Vec3 {
+pub fn ray_colour(
+    ray: &Ray,
+    background_colour: &dyn Fn(&Ray) -> Vec3,
+    world: &dyn Hittable,
+    depth: i32,
+) -> Vec3 {
     if depth <= 0 {
         return Vec3::new(0.0, 0.0, 0.0);
     }
 
     if let Some(hr) = world.hit(ray, 0.001, 100000.0) {
+        let emitted = hr.material.emitted(hr.u, hr.v, &hr.point);
+
         if let Some((scattered, attenuation)) = hr.material.scatter(ray, &hr) {
-            return attenuation * ray_colour(&scattered, world, depth - 1);
+            return emitted
+                + (attenuation * ray_colour(&scattered, background_colour, world, depth - 1));
         }
 
-        return Vec3::new(0.0, 0.0, 0.0);
+        return emitted;
     }
 
-    let unit_dir = ray.dir.unit();
-    let t = 0.5 * unit_dir.y + 1.0;
-
-    let white = Vec3 {
-        x: 1.0,
-        y: 1.0,
-        z: 1.0,
-    };
-    let blue = Vec3 {
-        x: 0.5,
-        y: 0.7,
-        z: 1.0,
-    };
-    white * (1.0 - t) + blue * t
+    background_colour(&ray)
 }
 
 #[cfg(test)]

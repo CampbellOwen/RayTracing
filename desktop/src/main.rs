@@ -3,7 +3,7 @@ extern crate rand;
 use rand::Rng;
 use renderer::{
     ray_colour, BVHNode, Camera, CheckerTexture, Dielectric, Hittable, Image, Lambertian, Material,
-    Metal, MovingSphere, Sphere, Vec3,
+    Metal, MovingSphere, Ray, Sphere, Vec3,
 };
 use std::{io, io::Write, rc::Rc};
 
@@ -290,10 +290,27 @@ fn main() {
 
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
 
-    let samples_per_pixel = 100;
+    let samples_per_pixel = 10;
     let max_depth = 50;
 
     let mut rng = rand::thread_rng();
+
+    let background_colour = |ray: &Ray| -> Vec3 {
+        let unit_dir = ray.dir.unit();
+        let t = 0.5 * unit_dir.y + 1.0;
+
+        let white = Vec3 {
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+        };
+        let blue = Vec3 {
+            x: 0.5,
+            y: 0.7,
+            z: 1.0,
+        };
+        white * (1.0 - t) + blue * t
+    };
 
     for y in 0..img.size.1 {
         if y % 10 == 0 {
@@ -307,7 +324,7 @@ fn main() {
                 let v = (y as f64 + rng.gen::<f64>()) / (height - 1) as f64;
 
                 let ray = camera.get_ray(u, v);
-                colour = colour + ray_colour(&ray, &bvh, max_depth);
+                colour = colour + ray_colour(&ray, &background_colour, &bvh, max_depth);
             }
 
             colour = colour / (samples_per_pixel as f64);
