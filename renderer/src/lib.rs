@@ -20,7 +20,7 @@ mod camera;
 pub use camera::Camera;
 
 mod material;
-pub use material::{Dielectric, Lambertian, Material, Metal};
+pub use material::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
 
 mod bounding_box;
 pub use bounding_box::AABB;

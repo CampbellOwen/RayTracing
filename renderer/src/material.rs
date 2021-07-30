@@ -124,7 +124,7 @@ impl Material for Dielectric {
 }
 
 pub struct DiffuseLight {
-    emit_colour: Rc<dyn Texture>,
+    pub emit_colour: Rc<dyn Texture>,
 }
 
 impl Material for DiffuseLight {

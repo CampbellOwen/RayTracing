@@ -11,7 +11,7 @@ pub struct Sphere {
 pub trait Spherical {
     fn center(&self, time: f64) -> Vec3;
     fn radius(&self, time: f64) -> f64;
-    fn material(&self) -> Rc<dyn Material>;
+    fn material(&self) -> &Rc<dyn Material>;
 }
 
 impl Spherical for Sphere {
@@ -21,8 +21,8 @@ impl Spherical for Sphere {
     fn radius(&self, _: f64) -> f64 {
         self.radius
     }
-    fn material(&self) -> Rc<dyn Material> {
-        self.material.clone()
+    fn material(&self) -> &Rc<dyn Material> {
+        &self.material
     }
 }
 
@@ -46,7 +46,12 @@ fn spherical_uv(p: &Vec3) -> (f64, f64) {
     )
 }
 
-fn spherical_hit<T: Spherical>(sphere: &T, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+fn spherical_hit<'material, T: Spherical>(
+    sphere: &'material T,
+    ray: &Ray,
+    t_min: f64,
+    t_max: f64,
+) -> Option<HitRecord<'material>> {
     let center = sphere.center(ray.time);
     let radius = sphere.radius(ray.time);
 
@@ -110,8 +115,8 @@ impl Spherical for MovingSphere {
         self.radius
     }
 
-    fn material(&self) -> Rc<dyn Material> {
-        self.material.clone()
+    fn material(&self) -> &Rc<dyn Material> {
+        &self.material
     }
 }
 

@@ -2,8 +2,8 @@ use exporters::ppm::write_image;
 extern crate rand;
 use rand::Rng;
 use renderer::{
-    ray_colour, BVHNode, Camera, CheckerTexture, Dielectric, Hittable, Image, Lambertian, Material,
-    Metal, MovingSphere, Ray, Sphere, Vec3,
+    ray_colour, BVHNode, Camera, CheckerTexture, Dielectric, DiffuseLight, Hittable, Image,
+    Lambertian, Material, Metal, MovingSphere, Ray, SolidColour, Sphere, Vec3,
 };
 use std::{io, io::Write, rc::Rc};
 
@@ -11,8 +11,31 @@ mod exporters;
 
 extern crate image;
 
+type SceneDescription = (Vec<Rc<dyn Hittable>>, Camera, Box<dyn Fn(&Ray) -> Vec3>);
+
+fn skybox(ray: &Ray) -> Vec3 {
+    let unit_dir = ray.dir.unit();
+    let t = 0.5 * unit_dir.y + 1.0;
+
+    let white = Vec3 {
+        x: 1.0,
+        y: 1.0,
+        z: 1.0,
+    };
+    let blue = Vec3 {
+        x: 0.5,
+        y: 0.7,
+        z: 1.0,
+    };
+    white * (1.0 - t) + blue * t
+}
+
+fn no_light(_: &Ray) -> Vec3 {
+    Vec3::new(0.0, 0.0, 0.0)
+}
+
 #[allow(dead_code)]
-fn create_simple_scene() -> (Vec<Rc<dyn Hittable>>, Camera) {
+fn create_simple_scene() -> SceneDescription {
     let ground_material: Rc<dyn Material> = Rc::new(Lambertian {
         albedo: Rc::new(CheckerTexture::new(
             Vec3::new(0.2, 0.3, 0.1),
@@ -107,11 +130,11 @@ fn create_simple_scene() -> (Vec<Rc<dyn Hittable>>, Camera) {
         1.0,
     );
 
-    return (world, camera);
+    return (world, camera, Box::new(skybox));
 }
 
 #[allow(dead_code)]
-fn create_random_scene() -> (Vec<Rc<dyn Hittable>>, Camera) {
+fn create_random_scene() -> SceneDescription {
     let mut world: Vec<Rc<dyn Hittable>> = Vec::new();
     let ground_material = Rc::new(Lambertian::new(Vec3::new(0.5, 0.5, 0.5)));
 
@@ -212,11 +235,11 @@ fn create_random_scene() -> (Vec<Rc<dyn Hittable>>, Camera) {
         1.0,
     );
 
-    return (world, camera);
+    return (world, camera, Box::new(skybox));
 }
 
 #[allow(dead_code)]
-fn two_spheres() -> (Vec<Rc<dyn Hittable>>, Camera) {
+fn two_spheres() -> SceneDescription {
     let material = Rc::new(Lambertian {
         albedo: Rc::new(CheckerTexture::new(
             Vec3::new(0.2, 0.3, 0.1),
@@ -243,6 +266,15 @@ fn two_spheres() -> (Vec<Rc<dyn Hittable>>, Camera) {
                 radius: 10.0,
                 material: material.clone(),
             }),
+            Rc::new(Sphere {
+                center: Vec3::new(10.0, 2.0, 0.5),
+                radius: 1.0,
+                material: Rc::new(DiffuseLight {
+                    emit_colour: Rc::new(SolidColour {
+                        colour: Vec3::new(4.0, 4.0, 4.0),
+                    }),
+                }),
+            }),
         ],
         Camera::new_instant(
             look_from,
@@ -253,6 +285,7 @@ fn two_spheres() -> (Vec<Rc<dyn Hittable>>, Camera) {
             aperture,
             focus_dist,
         ),
+        Box::new(no_light),
     );
 }
 
@@ -285,32 +318,15 @@ fn main() {
     let mut img = Image::new((width, height));
 
     //let (world, camera) = create_random_scene();
-    let (world, camera) = create_simple_scene();
-    //let (world, camera) = two_spheres();
+    let (world, camera, background_colour) = create_simple_scene();
+    //let (world, camera, background_colour) = two_spheres();
 
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
 
-    let samples_per_pixel = 10;
+    let samples_per_pixel = 100;
     let max_depth = 50;
 
     let mut rng = rand::thread_rng();
-
-    let background_colour = |ray: &Ray| -> Vec3 {
-        let unit_dir = ray.dir.unit();
-        let t = 0.5 * unit_dir.y + 1.0;
-
-        let white = Vec3 {
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-        };
-        let blue = Vec3 {
-            x: 0.5,
-            y: 0.7,
-            z: 1.0,
-        };
-        white * (1.0 - t) + blue * t
-    };
 
     for y in 0..img.size.1 {
         if y % 10 == 0 {
