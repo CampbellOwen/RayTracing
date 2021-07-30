@@ -28,6 +28,9 @@ pub use bounding_box::AABB;
 mod bvh;
 pub use bvh::BVHNode;
 
+mod texture;
+pub use texture::{CheckerTexture, SolidColour, Texture};
+
 pub fn ray_colour(ray: &Ray, world: &dyn Hittable, depth: i32) -> Vec3 {
     if depth <= 0 {
         return Vec3::new(0.0, 0.0, 0.0);

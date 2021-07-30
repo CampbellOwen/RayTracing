@@ -26,6 +26,26 @@ impl Spherical for Sphere {
     }
 }
 
+fn spherical_uv(p: &Vec3) -> (f64, f64) {
+    // u in [0, 1] for angle around the Y axis, from x = -1
+    // v in [0, 1] for angle around the Z axis, from y = -1 to y = 1
+    //
+    // u = phi / 2pi
+    // v = theta / pi
+    //
+    // x = -cos(phi)sin(theta)
+    // y = -cos(theta)
+    // z = sin(phi)sin(theta)
+
+    let theta = (-p.y).acos();
+    let phi = (-p.z).atan2(p.x) + std::f64::consts::PI;
+
+    (
+        phi / (2.0 * std::f64::consts::PI),
+        theta / std::f64::consts::PI,
+    )
+}
+
 fn spherical_hit<T: Spherical>(sphere: &T, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
     let center = sphere.center(ray.time);
     let radius = sphere.radius(ray.time);
@@ -52,7 +72,8 @@ fn spherical_hit<T: Spherical>(sphere: &T, ray: &Ray, t_min: f64, t_max: f64) ->
     let t = root;
     let point = ray.at(t);
     let normal = (point - center) / radius;
-    let hr = HitRecord::new(ray, &point, &normal, sphere.material(), t);
+    let (u, v) = spherical_uv(&normal);
+    let hr = HitRecord::new(ray, &point, &normal, sphere.material(), t, u, v);
 
     Some(hr)
 }

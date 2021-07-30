@@ -1,4 +1,6 @@
-use super::{HitRecord, Ray, Vec3};
+use std::rc::Rc;
+
+use super::{HitRecord, Ray, SolidColour, Texture, Vec3};
 use rand::Rng;
 
 pub trait Material {
@@ -6,7 +8,15 @@ pub trait Material {
 }
 
 pub struct Lambertian {
-    pub albedo: Vec3,
+    pub albedo: Rc<dyn Texture>,
+}
+
+impl Lambertian {
+    pub fn new(colour: Vec3) -> Lambertian {
+        Lambertian {
+            albedo: Rc::new(SolidColour { colour }),
+        }
+    }
 }
 
 impl Material for Lambertian {
@@ -18,13 +28,17 @@ impl Material for Lambertian {
             scatter_direction = hit_record.normal;
         }
 
+        let attenuation = self
+            .albedo
+            .sample(hit_record.u, hit_record.v, &hit_record.point);
+
         Some((
             Ray {
                 origin: hit_record.point,
                 dir: scatter_direction,
                 time: ray.time,
             },
-            self.albedo,
+            attenuation,
         ))
     }
 }

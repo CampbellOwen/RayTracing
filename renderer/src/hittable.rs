@@ -49,9 +49,7 @@ mod tests {
 
     #[test]
     fn test_single_bounding_box() {
-        let material = Rc::new(Lambertian {
-            albedo: Vec3::new(0.0, 0.0, 0.0),
-        });
+        let material = Rc::new(Lambertian::new(Vec3::new(0.0, 0.0, 0.0)));
         let world: Vec<Rc<dyn Hittable>> = vec![Rc::new(Sphere {
             center: Vec3::new(0.0, 0.0, 0.0),
             radius: 0.5,
@@ -75,9 +73,7 @@ mod tests {
 
     #[test]
     fn test_overlap_bounding_box() {
-        let material = Rc::new(Lambertian {
-            albedo: Vec3::new(0.0, 0.0, 0.0),
-        });
+        let material = Rc::new(Lambertian::new(Vec3::new(0.0, 0.0, 0.0)));
         let world: Vec<Rc<dyn Hittable>> = vec![
             Rc::new(Sphere {
                 center: Vec3::new(0.0, 0.0, 0.0),
@@ -108,9 +104,7 @@ mod tests {
 
     #[test]
     fn test_two_bounding_box() {
-        let material = Rc::new(Lambertian {
-            albedo: Vec3::new(0.0, 0.0, 0.0),
-        });
+        let material = Rc::new(Lambertian::new(Vec3::new(0.0, 0.0, 0.0)));
         let world: Vec<Rc<dyn Hittable>> = vec![
             Rc::new(Sphere {
                 center: Vec3::new(-0.5, -0.5, -0.5),

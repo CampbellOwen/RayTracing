@@ -1,22 +1,23 @@
 use exporters::ppm::write_image;
 use rand::Rng;
 use renderer::{
-    ray_colour, BVHNode, Camera, Dielectric, Hittable, Image, Lambertian, Material, Metal,
-    MovingSphere, Sphere, Vec3,
+    ray_colour, BVHNode, Camera, CheckerTexture, Dielectric, Hittable, Image, Lambertian, Material,
+    Metal, MovingSphere, Sphere, Vec3,
 };
 use std::{io, io::Write, rc::Rc};
 
 mod exporters;
 
 #[allow(dead_code)]
-fn create_simple_scene() -> Vec<Rc<dyn Hittable>> {
+fn create_simple_scene() -> (Vec<Rc<dyn Hittable>>, Camera) {
     let ground_material: Rc<dyn Material> = Rc::new(Lambertian {
-        albedo: Vec3::new(0.8, 0.8, 0.0),
+        albedo: Rc::new(CheckerTexture::new(
+            Vec3::new(0.2, 0.3, 0.1),
+            Vec3::new(0.9, 0.9, 0.9),
+        )),
     });
 
-    let center_material: Rc<dyn Material> = Rc::new(Lambertian {
-        albedo: Vec3::new(0.7, 0.3, 0.3),
-    });
+    let center_material: Rc<dyn Material> = Rc::new(Lambertian::new(Vec3::new(0.7, 0.3, 0.3)));
 
     let shiny_metal_material = Rc::new(Metal::new(Vec3::new(0.1, 0.1, 0.1), 0.0));
 
@@ -24,7 +25,7 @@ fn create_simple_scene() -> Vec<Rc<dyn Hittable>> {
 
     let right_material: Rc<dyn Material> = Rc::new(Metal::new(Vec3::new(0.8, 0.6, 0.2), 1.0));
 
-    vec![
+    let world: Vec<Rc<dyn Hittable>> = vec![
         Rc::new(Sphere {
             center: Vec3 {
                 x: 0.0,
@@ -79,15 +80,35 @@ fn create_simple_scene() -> Vec<Rc<dyn Hittable>> {
             radius: 100.0,
             material: ground_material.clone(),
         }),
-    ]
+    ];
+
+    let aspect_ratio = 16.0 / 9.0;
+    let look_from = Vec3::new(-5.0, 0.8, -3.5);
+    let look_at = Vec3::new(0.0, 0.0, -1.0);
+    let up = Vec3::new(0.0, 1.0, 0.0);
+
+    let dist_to_focus = (look_at - look_from).length();
+    let aperture = 0.1;
+
+    let camera = Camera::new(
+        look_from,
+        look_at,
+        up,
+        30.0,
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+        0.0,
+        1.0,
+    );
+
+    return (world, camera);
 }
 
 #[allow(dead_code)]
-fn create_random_scene() -> Vec<Rc<dyn Hittable>> {
+fn create_random_scene() -> (Vec<Rc<dyn Hittable>>, Camera) {
     let mut world: Vec<Rc<dyn Hittable>> = Vec::new();
-    let ground_material = Rc::new(Lambertian {
-        albedo: Vec3::new(0.5, 0.5, 0.5),
-    });
+    let ground_material = Rc::new(Lambertian::new(Vec3::new(0.5, 0.5, 0.5)));
 
     world.push(Rc::new(Sphere {
         center: Vec3::new(0.0, -1000.0, 0.0),
@@ -110,7 +131,7 @@ fn create_random_scene() -> Vec<Rc<dyn Hittable>> {
                 if material_choice < 0.8 {
                     // Diffuse material
                     let albedo = Vec3::random() * Vec3::random();
-                    let material = Rc::new(Lambertian { albedo });
+                    let material = Rc::new(Lambertian::new(albedo));
 
                     let center_2 = center + Vec3::new(0.0, rng.gen_range(0.0..0.5), 0.0);
 
@@ -152,9 +173,7 @@ fn create_random_scene() -> Vec<Rc<dyn Hittable>> {
         material,
     }));
 
-    let material = Rc::new(Lambertian {
-        albedo: Vec3::new(0.4, 0.2, 0.1),
-    });
+    let material = Rc::new(Lambertian::new(Vec3::new(0.4, 0.2, 0.1)));
     world.push(Rc::new(Sphere {
         center: Vec3::new(-4.0, 1.0, 0.0),
         radius: 1.0,
@@ -168,21 +187,7 @@ fn create_random_scene() -> Vec<Rc<dyn Hittable>> {
         material,
     }));
 
-    return world;
-}
-
-fn main() {
     let aspect_ratio = 16.0 / 9.0;
-    let width = 200;
-    let height = (width as f64 / aspect_ratio) as u32;
-
-    let mut img = Image::new((width, height));
-
-    let world = create_random_scene();
-    //let world = create_simple_scene();
-
-    let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
-
     let look_from = Vec3::new(13.0, 2.0, 3.0);
     let look_at = Vec3::new(0.0, 0.0, 0.0);
     let up = Vec3::new(0.0, 1.0, 0.0);
@@ -201,6 +206,21 @@ fn main() {
         0.0,
         1.0,
     );
+
+    return (world, camera);
+}
+
+fn main() {
+    let width = 800;
+    let aspect_ratio = 16.0 / 9.0;
+    let height = (width as f64 / aspect_ratio) as u32;
+
+    let mut img = Image::new((width, height));
+
+    //let world = create_random_scene();
+    let (world, camera) = create_simple_scene();
+
+    let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
 
     let samples_per_pixel = 100;
     let max_depth = 50;
