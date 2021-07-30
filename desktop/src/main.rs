@@ -210,6 +210,47 @@ fn create_random_scene() -> (Vec<Rc<dyn Hittable>>, Camera) {
     return (world, camera);
 }
 
+#[allow(dead_code)]
+fn two_spheres() -> (Vec<Rc<dyn Hittable>>, Camera) {
+    let material = Rc::new(Lambertian {
+        albedo: Rc::new(CheckerTexture::new(
+            Vec3::new(0.2, 0.3, 0.1),
+            Vec3::new(0.9, 0.9, 0.9),
+        )),
+    });
+
+    let look_from = Vec3::new(13.0, 2.0, 3.0);
+    let look_at = Vec3::new(0.0, 0.0, 0.0);
+    let up = Vec3::new(0.0, 1.0, 0.0);
+    let vfov = 20.0;
+    let aspect_ratio = 16.0 / 9.0;
+    let aperture = 0.1;
+    let focus_dist = (look_from - look_at).length();
+    return (
+        vec![
+            Rc::new(Sphere {
+                center: Vec3::new(0.0, -10.0, 0.0),
+                radius: 10.0,
+                material: material.clone(),
+            }),
+            Rc::new(Sphere {
+                center: Vec3::new(0.0, 10.0, 0.0),
+                radius: 10.0,
+                material: material.clone(),
+            }),
+        ],
+        Camera::new_instant(
+            look_from,
+            look_at,
+            up,
+            vfov,
+            aspect_ratio,
+            aperture,
+            focus_dist,
+        ),
+    );
+}
+
 fn main() {
     let width = 800;
     let aspect_ratio = 16.0 / 9.0;
@@ -217,8 +258,9 @@ fn main() {
 
     let mut img = Image::new((width, height));
 
-    //let world = create_random_scene();
-    let (world, camera) = create_simple_scene();
+    //let (world, camera) = create_random_scene();
+    //let (world, camera) = create_simple_scene();
+    let (world, camera) = two_spheres();
 
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
 
