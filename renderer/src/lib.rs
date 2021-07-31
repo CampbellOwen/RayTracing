@@ -11,7 +11,7 @@ mod hit;
 pub use hit::HitRecord;
 
 mod shape;
-pub use shape::{MovingSphere, Sphere};
+pub use shape::*;
 
 mod hittable;
 pub use hittable::Hittable;

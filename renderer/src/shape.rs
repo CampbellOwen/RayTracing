@@ -142,3 +142,53 @@ impl Hittable for MovingSphere {
         ))
     }
 }
+
+pub struct AARect {
+    pub x_range: (f64, f64),
+    pub y_range: (f64, f64),
+    pub z: f64,
+    pub material: Rc<dyn Material>,
+}
+
+impl Hittable for AARect {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        let t = (self.z - ray.origin.z) / ray.dir.z;
+        if t < t_min || t > t_max {
+            return None;
+        }
+
+        let ray_hit = ray.at(t);
+        let (x, y) = (ray_hit.x, ray_hit.y);
+        let (min_x, max_x) = self.x_range;
+        let (min_y, max_y) = self.y_range;
+        if x < min_x || x > max_x || y < min_y || y > max_y {
+            return None;
+        }
+
+        let width = max_x - min_x;
+        let height = max_y - min_y;
+
+        let u = (x - min_x) / width;
+        let v = (y - min_y) / height;
+
+        let outward_normal = Vec3::new(0.0, 0.0, 1.0);
+        Some(HitRecord::new(
+            ray,
+            &ray_hit,
+            &outward_normal,
+            &self.material,
+            t,
+            u,
+            v,
+        ))
+    }
+
+    fn bounding_box(&self, _: f64, _: f64) -> Option<AABB> {
+        let (min_x, max_x) = self.x_range;
+        let (min_y, max_y) = self.y_range;
+        Some(AABB {
+            min: Vec3::new(min_x, min_y, self.z - 0.0001),
+            max: Vec3::new(max_x, max_y, self.z + 0.0001),
+        })
+    }
+}

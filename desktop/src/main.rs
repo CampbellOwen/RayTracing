@@ -2,7 +2,7 @@ use exporters::ppm::write_image;
 extern crate rand;
 use rand::Rng;
 use renderer::{
-    ray_colour, BVHNode, Camera, CheckerTexture, Dielectric, DiffuseLight, Hittable, Image,
+    ray_colour, AARect, BVHNode, Camera, CheckerTexture, Dielectric, DiffuseLight, Hittable, Image,
     Lambertian, Material, Metal, MovingSphere, Ray, SolidColour, Sphere, Vec3,
 };
 use std::{io, io::Write, rc::Rc};
@@ -289,6 +289,58 @@ fn two_spheres() -> SceneDescription {
     );
 }
 
+#[allow(dead_code)]
+fn simple_light() -> SceneDescription {
+    let world: Vec<Rc<dyn Hittable>> = vec![
+        Rc::new(Sphere {
+            center: Vec3::new(0.0, -1000.0, 0.0),
+            radius: 1000.0,
+            material: Rc::new(Lambertian::new(Vec3::new(0.9, 0.9, 0.9))),
+        }),
+        Rc::new(Sphere {
+            center: Vec3::new(0.0, 2.0, 0.0),
+            radius: 2.0,
+            material: Rc::new(Lambertian {
+                albedo: Rc::new(load_texture("textures/earthmap.jpg").unwrap()),
+            }),
+        }),
+        Rc::new(Sphere {
+            center: Vec3::new(0.0, 6.5, 0.0),
+            radius: 2.0,
+            material: Rc::new(DiffuseLight {
+                emit_colour: Rc::new(SolidColour {
+                    colour: Vec3::new(4.0, 4.0, 4.0),
+                }),
+            }),
+        }),
+        Rc::new(AARect {
+            x_range: (3.0, 5.0),
+            y_range: (1.0, 3.0),
+            z: -2.0,
+            material: Rc::new(DiffuseLight {
+                emit_colour: Rc::new(SolidColour {
+                    colour: Vec3::new(4.0, 4.0, 4.0),
+                }),
+            }),
+        }),
+    ];
+
+    let look_from = Vec3::new(26.0, 3.0, 6.0);
+    let look_at = Vec3::new(0.0, 2.0, 0.0);
+
+    let camera = Camera::new_instant(
+        look_from,
+        look_at,
+        Vec3::new(0.0, 1.0, 0.0),
+        20.0,
+        16.0 / 9.0,
+        0.1,
+        (look_at - look_from).length(),
+    );
+
+    return (world, camera, Box::new(no_light));
+}
+
 fn load_texture(filename: &str) -> Option<Image> {
     let tex = image::open(filename).ok()?.into_rgb8();
     let mut tex_image = Image::new(tex.dimensions());
@@ -311,19 +363,20 @@ fn load_texture(filename: &str) -> Option<Image> {
 }
 
 fn main() {
-    let width = 800;
+    let width = 1080;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
     let mut img = Image::new((width, height));
 
     //let (world, camera) = create_random_scene();
-    let (world, camera, background_colour) = create_simple_scene();
+    //let (world, camera, background_colour) = create_simple_scene();
     //let (world, camera, background_colour) = two_spheres();
+    let (world, camera, background_colour) = simple_light();
 
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
 
-    let samples_per_pixel = 100;
+    let samples_per_pixel = 10000;
     let max_depth = 50;
 
     let mut rng = rand::thread_rng();
