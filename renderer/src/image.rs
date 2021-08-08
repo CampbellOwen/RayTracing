@@ -1,4 +1,4 @@
-use super::{Texture, Vec3};
+use crate::{Texture, Vec3};
 
 #[derive(Debug, Clone)]
 pub struct Image {
