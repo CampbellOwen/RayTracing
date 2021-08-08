@@ -4,6 +4,3 @@ members = [
     "desktop",
     "renderer",
 ]
-
-[profile.release]
-debug = true
