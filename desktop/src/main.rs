@@ -351,9 +351,9 @@ fn load_texture(filename: &str) -> Option<Image> {
                 x,
                 y,
                 &Vec3::new(
-                    pixel[0] as f64 / 255.0,
-                    pixel[1] as f64 / 255.0,
-                    pixel[2] as f64 / 255.0,
+                    (pixel[0] as f64 / 255.0).powi(2), // Gamma correction approximation
+                    (pixel[1] as f64 / 255.0).powi(2),
+                    (pixel[2] as f64 / 255.0).powi(2),
                 ),
             );
         }
@@ -363,7 +363,7 @@ fn load_texture(filename: &str) -> Option<Image> {
 }
 
 fn main() {
-    let width = 1080;
+    let width = 600;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
@@ -376,7 +376,7 @@ fn main() {
 
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
 
-    let samples_per_pixel = 10000;
+    let samples_per_pixel = 100;
     let max_depth = 50;
 
     let mut rng = rand::thread_rng();
