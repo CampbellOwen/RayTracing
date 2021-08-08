@@ -1,14 +1,17 @@
 use rand::Rng;
 
-use super::{Ray, Vec3};
+use crate::math::rand_in_unit_sphere;
+
+use super::Ray;
+use glam::DVec3;
 
 pub struct Camera {
-    origin: Vec3,
-    lower_left_corner: Vec3,
-    horizontal: Vec3,
-    vertical: Vec3,
-    u: Vec3,
-    v: Vec3,
+    origin: DVec3,
+    lower_left_corner: DVec3,
+    horizontal: DVec3,
+    vertical: DVec3,
+    u: DVec3,
+    v: DVec3,
     lens_radius: f64,
     time_0: f64,
     time_1: f64,
@@ -16,9 +19,9 @@ pub struct Camera {
 
 impl Camera {
     pub fn new(
-        look_from: Vec3,
-        look_at: Vec3,
-        up: Vec3,
+        look_from: DVec3,
+        look_at: DVec3,
+        up: DVec3,
         vfov: f64,
         aspect_ratio: f64,
         aperture: f64,
@@ -32,9 +35,9 @@ impl Camera {
         let viewport_height = 2.0 * h;
         let viewport_width = aspect_ratio * viewport_height;
 
-        let w = (look_from - look_at).unit();
-        let u = up.cross(&w).unit();
-        let v = w.cross(&u);
+        let w = (look_from - look_at).normalize();
+        let u = up.cross(w).normalize();
+        let v = w.cross(u);
 
         let origin = look_from;
         let horizontal = u * focus_dist * viewport_width;
@@ -55,9 +58,9 @@ impl Camera {
     }
 
     pub fn new_instant(
-        look_from: Vec3,
-        look_at: Vec3,
-        up: Vec3,
+        look_from: DVec3,
+        look_at: DVec3,
+        up: DVec3,
         vfov: f64,
         aspect_ratio: f64,
         aperture: f64,
@@ -77,7 +80,7 @@ impl Camera {
     }
 
     pub fn get_ray(&self, s: f64, t: f64) -> Ray {
-        let random_in_lens = Vec3::rand_in_unit_sphere() * self.lens_radius;
+        let random_in_lens = rand_in_unit_sphere() * self.lens_radius;
         let offset = (self.u * random_in_lens.x) + (self.v * random_in_lens.y);
 
         let time = if (self.time_1 - self.time_0) > 0.000001 {

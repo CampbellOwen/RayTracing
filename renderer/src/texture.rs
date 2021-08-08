@@ -1,17 +1,17 @@
 use std::rc::Rc;
 
-use super::Vec3;
+use glam::DVec3;
 
 pub trait Texture {
-    fn sample(&self, u: f64, v: f64, p: &Vec3) -> Vec3;
+    fn sample(&self, u: f64, v: f64, p: DVec3) -> DVec3;
 }
 
 pub struct SolidColour {
-    pub colour: Vec3,
+    pub colour: DVec3,
 }
 
 impl Texture for SolidColour {
-    fn sample(&self, _: f64, _: f64, _: &Vec3) -> Vec3 {
+    fn sample(&self, _: f64, _: f64, _: DVec3) -> DVec3 {
         self.colour
     }
 }
@@ -22,7 +22,7 @@ pub struct CheckerTexture {
 }
 
 impl CheckerTexture {
-    pub fn new(c1: Vec3, c2: Vec3) -> CheckerTexture {
+    pub fn new(c1: DVec3, c2: DVec3) -> CheckerTexture {
         CheckerTexture {
             odd: Rc::new(SolidColour { colour: c1 }),
             even: Rc::new(SolidColour { colour: c2 }),
@@ -31,7 +31,7 @@ impl CheckerTexture {
 }
 
 impl Texture for CheckerTexture {
-    fn sample(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
+    fn sample(&self, u: f64, v: f64, p: DVec3) -> DVec3 {
         let sines = f64::sin(10.0 * p.x) * f64::sin(10.0 * p.y) * f64::sin(10.0 * p.z);
 
         if sines < 0.0 {

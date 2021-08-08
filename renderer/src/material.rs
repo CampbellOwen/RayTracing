@@ -1,12 +1,14 @@
 use std::rc::Rc;
 
-use super::{HitRecord, Ray, SolidColour, Texture, Vec3};
+use super::{HitRecord, Ray, SolidColour, Texture};
+use crate::math::{near_zero, rand_in_unit_sphere, rand_unit_vector, reflect, refract};
+use glam::DVec3;
 use rand::Rng;
 
 pub trait Material {
-    fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> Option<(Ray, Vec3)>;
-    fn emitted(&self, _: f64, _: f64, _: &Vec3) -> Vec3 {
-        Vec3::new(0.0, 0.0, 0.0)
+    fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> Option<(Ray, DVec3)>;
+    fn emitted(&self, _: f64, _: f64, _: DVec3) -> DVec3 {
+        DVec3::new(0.0, 0.0, 0.0)
     }
 }
 
@@ -15,7 +17,7 @@ pub struct Lambertian {
 }
 
 impl Lambertian {
-    pub fn new(colour: Vec3) -> Lambertian {
+    pub fn new(colour: DVec3) -> Lambertian {
         Lambertian {
             albedo: Rc::new(SolidColour { colour }),
         }
@@ -23,17 +25,17 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> Option<(Ray, Vec3)> {
-        let mut scatter_direction = hit_record.normal + Vec3::rand_unit_vector();
+    fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> Option<(Ray, DVec3)> {
+        let mut scatter_direction = hit_record.normal + rand_unit_vector();
 
         // Catch degenerate direction
-        if scatter_direction.near_zero() {
+        if near_zero(scatter_direction) {
             scatter_direction = hit_record.normal;
         }
 
         let attenuation = self
             .albedo
-            .sample(hit_record.u, hit_record.v, &hit_record.point);
+            .sample(hit_record.u, hit_record.v, hit_record.point);
 
         Some((
             Ray {
@@ -47,12 +49,12 @@ impl Material for Lambertian {
 }
 
 pub struct Metal {
-    albedo: Vec3,
+    albedo: DVec3,
     fuzz: f64,
 }
 
 impl Metal {
-    pub fn new(albedo: Vec3, fuzz: f64) -> Metal {
+    pub fn new(albedo: DVec3, fuzz: f64) -> Metal {
         Metal {
             albedo,
             fuzz: if fuzz > 1.0 { 1.0 } else { fuzz },
@@ -61,14 +63,14 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> Option<(Ray, Vec3)> {
-        let reflected = ray.dir.unit().reflect(&hit_record.normal);
+    fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> Option<(Ray, DVec3)> {
+        let reflected = reflect(ray.dir.normalize(), hit_record.normal);
 
-        if reflected.dot(&hit_record.normal) > 0.0 {
+        if reflected.dot(hit_record.normal) > 0.0 {
             return Some((
                 Ray {
                     origin: hit_record.point,
-                    dir: reflected + (Vec3::rand_in_unit_sphere() * self.fuzz),
+                    dir: reflected + (rand_in_unit_sphere() * self.fuzz),
                     time: ray.time,
                 },
                 self.albedo,
@@ -91,25 +93,25 @@ fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> Option<(Ray, Vec3)> {
+    fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> Option<(Ray, DVec3)> {
         let refraction_ratio = if hit_record.front_face {
             1.0 / self.ior
         } else {
             self.ior
         };
 
-        let unit_direction = ray.dir.unit();
+        let unit_direction = ray.dir.normalize();
 
-        let cos_theta = Vec3::dot(&-unit_direction, &hit_record.normal).min(1.0);
+        let cos_theta = DVec3::dot(-unit_direction, hit_record.normal).min(1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
         let cannot_refract = (refraction_ratio * sin_theta) > 1.0;
 
         let direction = if cannot_refract
             || reflectance(cos_theta, refraction_ratio) > rand::thread_rng().gen::<f64>()
         {
-            unit_direction.reflect(&hit_record.normal)
+            reflect(unit_direction, hit_record.normal)
         } else {
-            unit_direction.refract(&hit_record.normal, refraction_ratio)
+            refract(unit_direction, hit_record.normal, refraction_ratio)
         };
 
         Some((
@@ -118,7 +120,7 @@ impl Material for Dielectric {
                 dir: direction,
                 time: ray.time,
             },
-            Vec3::new(1.0, 1.0, 1.0),
+            DVec3::new(1.0, 1.0, 1.0),
         ))
     }
 }
@@ -128,10 +130,10 @@ pub struct DiffuseLight {
 }
 
 impl Material for DiffuseLight {
-    fn scatter(&self, _: &Ray, _: &HitRecord) -> Option<(Ray, Vec3)> {
+    fn scatter(&self, _: &Ray, _: &HitRecord) -> Option<(Ray, DVec3)> {
         None
     }
-    fn emitted(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
+    fn emitted(&self, u: f64, v: f64, p: DVec3) -> DVec3 {
         self.emit_colour.sample(u, v, p)
     }
 }

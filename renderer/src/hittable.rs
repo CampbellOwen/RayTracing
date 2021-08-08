@@ -43,15 +43,17 @@ impl Hittable for &[Rc<dyn Hittable>] {
 mod tests {
     use std::rc::Rc;
 
-    use crate::{Lambertian, Sphere, Vec3};
+    use crate::{Lambertian, Sphere};
 
     use super::*;
 
+    use glam::DVec3;
+
     #[test]
     fn test_single_bounding_box() {
-        let material = Rc::new(Lambertian::new(Vec3::new(0.0, 0.0, 0.0)));
+        let material = Rc::new(Lambertian::new(DVec3::new(0.0, 0.0, 0.0)));
         let world: Vec<Rc<dyn Hittable>> = vec![Rc::new(Sphere {
-            center: Vec3::new(0.0, 0.0, 0.0),
+            center: DVec3::new(0.0, 0.0, 0.0),
             radius: 0.5,
             material: material.clone(),
         })];
@@ -65,23 +67,23 @@ mod tests {
         assert_eq!(
             bbox,
             AABB {
-                min: Vec3::new(-0.5, -0.5, -0.5),
-                max: Vec3::new(0.5, 0.5, 0.5)
+                min: DVec3::new(-0.5, -0.5, -0.5),
+                max: DVec3::new(0.5, 0.5, 0.5)
             }
         )
     }
 
     #[test]
     fn test_overlap_bounding_box() {
-        let material = Rc::new(Lambertian::new(Vec3::new(0.0, 0.0, 0.0)));
+        let material = Rc::new(Lambertian::new(DVec3::new(0.0, 0.0, 0.0)));
         let world: Vec<Rc<dyn Hittable>> = vec![
             Rc::new(Sphere {
-                center: Vec3::new(0.0, 0.0, 0.0),
+                center: DVec3::new(0.0, 0.0, 0.0),
                 radius: 0.5,
                 material: material.clone(),
             }),
             Rc::new(Sphere {
-                center: Vec3::new(0.0, 0.0, 0.0),
+                center: DVec3::new(0.0, 0.0, 0.0),
                 radius: 0.2,
                 material: material.clone(),
             }),
@@ -96,23 +98,23 @@ mod tests {
         assert_eq!(
             bbox,
             AABB {
-                min: Vec3::new(-0.5, -0.5, -0.5),
-                max: Vec3::new(0.5, 0.5, 0.5)
+                min: DVec3::new(-0.5, -0.5, -0.5),
+                max: DVec3::new(0.5, 0.5, 0.5)
             }
         )
     }
 
     #[test]
     fn test_two_bounding_box() {
-        let material = Rc::new(Lambertian::new(Vec3::new(0.0, 0.0, 0.0)));
+        let material = Rc::new(Lambertian::new(DVec3::new(0.0, 0.0, 0.0)));
         let world: Vec<Rc<dyn Hittable>> = vec![
             Rc::new(Sphere {
-                center: Vec3::new(-0.5, -0.5, -0.5),
+                center: DVec3::new(-0.5, -0.5, -0.5),
                 radius: 0.5,
                 material: material.clone(),
             }),
             Rc::new(Sphere {
-                center: Vec3::new(0.5, 0.5, 0.5),
+                center: DVec3::new(0.5, 0.5, 0.5),
                 radius: 0.5,
                 material: material.clone(),
             }),
@@ -127,8 +129,8 @@ mod tests {
         assert_eq!(
             bbox,
             AABB {
-                min: Vec3::new(-1.0, -1.0, -1.0),
-                max: Vec3::new(1.0, 1.0, 1.0)
+                min: DVec3::new(-1.0, -1.0, -1.0),
+                max: DVec3::new(1.0, 1.0, 1.0)
             }
         )
     }

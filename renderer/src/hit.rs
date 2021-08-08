@@ -1,10 +1,12 @@
 use std::rc::Rc;
 
-use super::{dot, Material, Ray, Vec3};
+use super::{Material, Ray};
+
+use glam::DVec3;
 
 pub struct HitRecord<'material> {
-    pub point: Vec3,
-    pub normal: Vec3,
+    pub point: DVec3,
+    pub normal: DVec3,
     pub material: &'material Rc<dyn Material>,
     pub t: f64,
     pub u: f64,
@@ -15,8 +17,8 @@ pub struct HitRecord<'material> {
 impl<'material> HitRecord<'material> {
     pub fn new(
         ray: &Ray,
-        point: &Vec3,
-        normal: &Vec3,
+        point: &DVec3,
+        normal: DVec3,
         material: &'material Rc<dyn Material>,
         t: f64,
         u: f64,
@@ -24,7 +26,7 @@ impl<'material> HitRecord<'material> {
     ) -> HitRecord<'material> {
         let mut hr = HitRecord {
             point: *point,
-            normal: *normal,
+            normal: normal,
             material,
             t,
             u,
@@ -34,12 +36,12 @@ impl<'material> HitRecord<'material> {
         hr.set_face_normal(ray, normal);
         return hr;
     }
-    fn set_face_normal(&mut self, ray: &Ray, outward_normal: &Vec3) {
-        self.front_face = dot(&ray.dir, outward_normal) < 0.0;
+    fn set_face_normal(&mut self, ray: &Ray, outward_normal: DVec3) {
+        self.front_face = DVec3::dot(ray.dir, outward_normal) < 0.0;
         self.normal = if self.front_face {
-            *outward_normal
+            outward_normal
         } else {
-            -*outward_normal
+            -outward_normal
         }
     }
 }

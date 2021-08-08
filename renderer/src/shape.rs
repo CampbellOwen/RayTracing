@@ -1,21 +1,23 @@
 use std::rc::Rc;
 
-use super::{dot, HitRecord, Hittable, Material, Ray, Vec3, AABB};
+use super::{HitRecord, Hittable, Material, Ray, AABB};
+
+use glam::DVec3;
 
 pub struct Sphere {
-    pub center: Vec3,
+    pub center: DVec3,
     pub radius: f64,
     pub material: Rc<dyn Material>,
 }
 
 pub trait Spherical {
-    fn center(&self, time: f64) -> Vec3;
+    fn center(&self, time: f64) -> DVec3;
     fn radius(&self, time: f64) -> f64;
     fn material(&self) -> &Rc<dyn Material>;
 }
 
 impl Spherical for Sphere {
-    fn center(&self, _: f64) -> Vec3 {
+    fn center(&self, _: f64) -> DVec3 {
         self.center
     }
     fn radius(&self, _: f64) -> f64 {
@@ -26,7 +28,7 @@ impl Spherical for Sphere {
     }
 }
 
-fn spherical_uv(p: &Vec3) -> (f64, f64) {
+fn spherical_uv(p: &DVec3) -> (f64, f64) {
     // u in [0, 1] for angle around the Y axis, from x = -1
     // v in [0, 1] for angle around the Z axis, from y = -1 to y = 1
     //
@@ -58,7 +60,7 @@ fn spherical_hit<'material, T: Spherical>(
     let oc = ray.origin - center;
 
     let a = ray.dir.length_squared();
-    let half_b = dot(&oc, &ray.dir);
+    let half_b = oc.dot(ray.dir);
     let c = oc.length_squared() - radius * radius;
     let discriminant = half_b * half_b - a * c;
 
@@ -78,7 +80,7 @@ fn spherical_hit<'material, T: Spherical>(
     let point = ray.at(t);
     let normal = (point - center) / radius;
     let (u, v) = spherical_uv(&normal);
-    let hr = HitRecord::new(ray, &point, &normal, sphere.material(), t, u, v);
+    let hr = HitRecord::new(ray, &point, normal, sphere.material(), t, u, v);
 
     Some(hr)
 }
@@ -89,15 +91,15 @@ impl Hittable for Sphere {
     }
     fn bounding_box(&self, _: f64, _: f64) -> Option<crate::AABB> {
         Some(AABB {
-            min: self.center - Vec3::new(self.radius, self.radius, self.radius),
-            max: self.center + Vec3::new(self.radius, self.radius, self.radius),
+            min: self.center - DVec3::new(self.radius, self.radius, self.radius),
+            max: self.center + DVec3::new(self.radius, self.radius, self.radius),
         })
     }
 }
 
 pub struct MovingSphere {
-    pub center_0: Vec3,
-    pub center_1: Vec3,
+    pub center_0: DVec3,
+    pub center_1: DVec3,
 
     pub time_0: f64,
     pub time_1: f64,
@@ -107,7 +109,7 @@ pub struct MovingSphere {
 }
 
 impl Spherical for MovingSphere {
-    fn center(&self, time: f64) -> Vec3 {
+    fn center(&self, time: f64) -> DVec3 {
         self.center_0
             + (self.center_1 - self.center_0) * ((time - self.time_0) / (self.time_1 - self.time_0))
     }
@@ -128,7 +130,7 @@ impl Hittable for MovingSphere {
         let center_0 = self.center(time_0);
         let center_1 = self.center(time_1);
 
-        let radius_vec = Vec3::new(self.radius, self.radius, self.radius);
+        let radius_vec = DVec3::new(self.radius, self.radius, self.radius);
 
         Some(AABB::surrounding_box(
             &AABB {
@@ -171,11 +173,11 @@ impl Hittable for AARect {
         let u = (x - min_x) / width;
         let v = (y - min_y) / height;
 
-        let outward_normal = Vec3::new(0.0, 0.0, 1.0);
+        let outward_normal = DVec3::new(0.0, 0.0, 1.0);
         Some(HitRecord::new(
             ray,
             &ray_hit,
-            &outward_normal,
+            outward_normal,
             &self.material,
             t,
             u,
@@ -187,8 +189,8 @@ impl Hittable for AARect {
         let (min_x, max_x) = self.x_range;
         let (min_y, max_y) = self.y_range;
         Some(AABB {
-            min: Vec3::new(min_x, min_y, self.z - 0.0001),
-            max: Vec3::new(max_x, max_y, self.z + 0.0001),
+            min: DVec3::new(min_x, min_y, self.z - 0.0001),
+            max: DVec3::new(max_x, max_y, self.z + 0.0001),
         })
     }
 }

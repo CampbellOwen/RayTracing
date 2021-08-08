@@ -1,8 +1,10 @@
 mod image;
 pub use image::Image;
 
-mod vec3;
-pub use vec3::{cross, dot, Vec3};
+//mod vec3;
+//pub use vec3::{cross, dot, Vec3};
+
+use glam::DVec3;
 
 mod ray;
 pub use ray::Ray;
@@ -31,18 +33,21 @@ pub use bvh::BVHNode;
 mod texture;
 pub use texture::{CheckerTexture, SolidColour, Texture};
 
+mod math;
+pub use math::*;
+
 pub fn ray_colour(
     ray: &Ray,
-    background_colour: &dyn Fn(&Ray) -> Vec3,
+    background_colour: &dyn Fn(&Ray) -> DVec3,
     world: &dyn Hittable,
     depth: i32,
-) -> Vec3 {
+) -> DVec3 {
     if depth <= 0 {
-        return Vec3::new(0.0, 0.0, 0.0);
+        return DVec3::new(0.0, 0.0, 0.0);
     }
 
     if let Some(hr) = world.hit(ray, 0.001, 100000.0) {
-        let emitted = hr.material.emitted(hr.u, hr.v, &hr.point);
+        let emitted = hr.material.emitted(hr.u, hr.v, hr.point);
 
         if let Some((scattered, attenuation)) = hr.material.scatter(ray, &hr) {
             return emitted

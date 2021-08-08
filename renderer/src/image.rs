@@ -1,4 +1,6 @@
-use crate::{Texture, Vec3};
+use crate::Texture;
+
+use glam::DVec3;
 
 #[derive(Debug, Clone)]
 pub struct Image {
@@ -15,7 +17,7 @@ impl Image {
         }
     }
 
-    pub fn get(&self, x: u32, y: u32) -> Option<Vec3> {
+    pub fn get(&self, x: u32, y: u32) -> Option<DVec3> {
         let index: usize = (y * self.size.0) as usize + x as usize;
         let index = index * 3;
 
@@ -23,10 +25,10 @@ impl Image {
         let g = *self.data.get(index + 1)?;
         let b = *self.data.get(index + 2)?;
 
-        return Some(Vec3 { x: r, y: g, z: b });
+        return Some(DVec3::new(r, g, b));
     }
 
-    pub fn put(&mut self, x: u32, y: u32, colour: &Vec3) {
+    pub fn put(&mut self, x: u32, y: u32, colour: &DVec3) {
         let index: usize = (y * self.size.0) as usize + x as usize;
         let index = index * 3;
 
@@ -37,7 +39,7 @@ impl Image {
 }
 
 impl Texture for Image {
-    fn sample(&self, u: f64, v: f64, _: &Vec3) -> Vec3 {
+    fn sample(&self, u: f64, v: f64, _: DVec3) -> DVec3 {
         let u = u.clamp(0.0, 1.0);
         let v = 1.0 - v.clamp(0.0, 1.0); // Flip vertical
 

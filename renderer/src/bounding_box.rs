@@ -1,21 +1,22 @@
-use super::{Ray, Vec3};
+use super::Ray;
+use glam::DVec3;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AABB {
-    pub min: Vec3,
-    pub max: Vec3,
+    pub min: DVec3,
+    pub max: DVec3,
 }
 
 impl AABB {
     pub fn surrounding_box(box_1: &AABB, box_2: &AABB) -> AABB {
         AABB {
-            min: Vec3::new(
+            min: DVec3::new(
                 f64::min(box_1.min.x, box_2.min.x),
                 f64::min(box_1.min.y, box_2.min.y),
                 f64::min(box_1.min.z, box_2.min.z),
             ),
 
-            max: Vec3::new(
+            max: DVec3::new(
                 f64::max(box_1.max.x, box_2.max.x),
                 f64::max(box_1.max.y, box_2.max.y),
                 f64::max(box_1.max.z, box_2.max.z),
