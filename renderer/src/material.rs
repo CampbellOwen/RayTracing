@@ -1,11 +1,11 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use super::{HitRecord, Ray, SolidColour, Texture};
 use crate::math::{near_zero, rand_in_unit_sphere, rand_unit_vector, reflect, refract};
 use glam::DVec3;
 use rand::Rng;
 
-pub trait Material {
+pub trait Material: Send + Sync {
     fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> Option<(Ray, DVec3)>;
     fn emitted(&self, _: f64, _: f64, _: DVec3) -> DVec3 {
         DVec3::new(0.0, 0.0, 0.0)
@@ -13,13 +13,13 @@ pub trait Material {
 }
 
 pub struct Lambertian {
-    pub albedo: Rc<dyn Texture>,
+    pub albedo: Arc<dyn Texture>,
 }
 
 impl Lambertian {
     pub fn new(colour: DVec3) -> Lambertian {
         Lambertian {
-            albedo: Rc::new(SolidColour { colour }),
+            albedo: Arc::new(SolidColour { colour }),
         }
     }
 }
@@ -126,7 +126,7 @@ impl Material for Dielectric {
 }
 
 pub struct DiffuseLight {
-    pub emit_colour: Rc<dyn Texture>,
+    pub emit_colour: Arc<dyn Texture>,
 }
 
 impl Material for DiffuseLight {

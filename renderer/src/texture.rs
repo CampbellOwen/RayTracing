@@ -1,8 +1,8 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use glam::DVec3;
 
-pub trait Texture {
+pub trait Texture: Send + Sync {
     fn sample(&self, u: f64, v: f64, p: DVec3) -> DVec3;
 }
 
@@ -17,15 +17,15 @@ impl Texture for SolidColour {
 }
 
 pub struct CheckerTexture {
-    pub odd: Rc<dyn Texture>,
-    pub even: Rc<dyn Texture>,
+    pub odd: Arc<dyn Texture>,
+    pub even: Arc<dyn Texture>,
 }
 
 impl CheckerTexture {
     pub fn new(c1: DVec3, c2: DVec3) -> CheckerTexture {
         CheckerTexture {
-            odd: Rc::new(SolidColour { colour: c1 }),
-            even: Rc::new(SolidColour { colour: c2 }),
+            odd: Arc::new(SolidColour { colour: c1 }),
+            even: Arc::new(SolidColour { colour: c2 }),
         }
     }
 }

@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use super::{HitRecord, Hittable, Material, Ray, AABB};
 
@@ -7,13 +7,13 @@ use glam::DVec3;
 pub struct Sphere {
     pub center: DVec3,
     pub radius: f64,
-    pub material: Rc<dyn Material>,
+    pub material: Arc<dyn Material>,
 }
 
 pub trait Spherical {
     fn center(&self, time: f64) -> DVec3;
     fn radius(&self, time: f64) -> f64;
-    fn material(&self) -> &Rc<dyn Material>;
+    fn material(&self) -> &Arc<dyn Material>;
 }
 
 impl Spherical for Sphere {
@@ -23,7 +23,7 @@ impl Spherical for Sphere {
     fn radius(&self, _: f64) -> f64 {
         self.radius
     }
-    fn material(&self) -> &Rc<dyn Material> {
+    fn material(&self) -> &Arc<dyn Material> {
         &self.material
     }
 }
@@ -105,7 +105,7 @@ pub struct MovingSphere {
     pub time_1: f64,
 
     pub radius: f64,
-    pub material: Rc<dyn Material>,
+    pub material: Arc<dyn Material>,
 }
 
 impl Spherical for MovingSphere {
@@ -117,7 +117,7 @@ impl Spherical for MovingSphere {
         self.radius
     }
 
-    fn material(&self) -> &Rc<dyn Material> {
+    fn material(&self) -> &Arc<dyn Material> {
         &self.material
     }
 }
@@ -149,7 +149,7 @@ pub struct AARect {
     pub x_range: (f64, f64),
     pub y_range: (f64, f64),
     pub z: f64,
-    pub material: Rc<dyn Material>,
+    pub material: Arc<dyn Material>,
 }
 
 impl Hittable for AARect {

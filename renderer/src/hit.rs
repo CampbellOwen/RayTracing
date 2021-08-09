@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use super::{Material, Ray};
 
@@ -7,7 +7,7 @@ use glam::DVec3;
 pub struct HitRecord<'material> {
     pub point: DVec3,
     pub normal: DVec3,
-    pub material: &'material Rc<dyn Material>,
+    pub material: &'material Arc<dyn Material>,
     pub t: f64,
     pub u: f64,
     pub v: f64,
@@ -19,7 +19,7 @@ impl<'material> HitRecord<'material> {
         ray: &Ray,
         point: &DVec3,
         normal: DVec3,
-        material: &'material Rc<dyn Material>,
+        material: &'material Arc<dyn Material>,
         t: f64,
         u: f64,
         v: f64,

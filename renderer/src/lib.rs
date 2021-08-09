@@ -37,8 +37,8 @@ mod math;
 pub use math::*;
 
 pub fn ray_colour(
-    ray: &Ray,
-    background_colour: &dyn Fn(&Ray) -> DVec3,
+    ray: Ray,
+    background_colour: &fn(Ray) -> DVec3,
     world: &dyn Hittable,
     depth: i32,
 ) -> DVec3 {
@@ -46,18 +46,18 @@ pub fn ray_colour(
         return DVec3::new(0.0, 0.0, 0.0);
     }
 
-    if let Some(hr) = world.hit(ray, 0.001, 100000.0) {
+    if let Some(hr) = world.hit(&ray, 0.001, 100000.0) {
         let emitted = hr.material.emitted(hr.u, hr.v, hr.point);
 
-        if let Some((scattered, attenuation)) = hr.material.scatter(ray, &hr) {
+        if let Some((scattered, attenuation)) = hr.material.scatter(&ray, &hr) {
             return emitted
-                + (attenuation * ray_colour(&scattered, background_colour, world, depth - 1));
+                + (attenuation * ray_colour(scattered, background_colour, world, depth - 1));
         }
 
         return emitted;
     }
 
-    background_colour(&ray)
+    background_colour(ray)
 }
 
 #[cfg(test)]

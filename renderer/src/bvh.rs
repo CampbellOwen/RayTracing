@@ -1,16 +1,16 @@
-use std::{cmp::Ordering, rc::Rc};
+use std::{cmp::Ordering, sync::Arc};
 
 use super::{HitRecord, Hittable, AABB};
 use rand::{self, Rng};
 
 pub struct BVHNode {
-    left: Rc<dyn Hittable>,
-    right: Rc<dyn Hittable>,
+    left: Arc<dyn Hittable>,
+    right: Arc<dyn Hittable>,
     bbox: AABB,
 }
 
 impl BVHNode {
-    pub fn new(hittables: &[Rc<dyn Hittable>], time_0: f64, time_1: f64) -> BVHNode {
+    pub fn new(hittables: &[Arc<dyn Hittable>], time_0: f64, time_1: f64) -> BVHNode {
         if hittables.len() == 1 {
             return BVHNode {
                 left: hittables[0].clone(),
@@ -50,8 +50,8 @@ impl BVHNode {
         });
 
         let midpoint = objects.len() / 2;
-        let left = Rc::new(BVHNode::new(&objects[0..midpoint], time_0, time_1));
-        let right = Rc::new(BVHNode::new(&objects[midpoint..], time_0, time_1));
+        let left = Arc::new(BVHNode::new(&objects[0..midpoint], time_0, time_1));
+        let right = Arc::new(BVHNode::new(&objects[midpoint..], time_0, time_1));
 
         let left_bbox = left.bounding_box(time_0, time_1);
         let right_bbox = right.bounding_box(time_0, time_1);
