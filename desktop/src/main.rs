@@ -1,5 +1,8 @@
 use exporters::ppm::write_image;
+use rand::prelude::*;
 use rand::Rng;
+use rand_pcg::Pcg64;
+
 use renderer::{
     rand_in_range, random, ray_colour, AARect, BVHNode, Camera, CheckerTexture, Dielectric,
     DiffuseLight, Hittable, Image, Lambertian, Material, Metal, MovingSphere, Ray, SolidColour,
@@ -115,6 +118,7 @@ fn create_random_scene() -> SceneDescription {
         material: ground_material.clone(),
     }));
 
+    //let mut rng = Pcg64::seed_from_u64(2);
     let mut rng = rand::thread_rng();
 
     for a in -11..11 {
@@ -144,7 +148,7 @@ fn create_random_scene() -> SceneDescription {
                     }));
                 } else if material_choice < 0.95 {
                     // Metal
-                    let albedo = rand_in_range(0.5, 1.0);
+                    let albedo = rand_in_range(&mut rng, 0.5, 1.0);
                     let fuzz = rng.gen_range(0.0..0.5);
                     let material = Arc::new(Metal::new(albedo, fuzz));
                     world.push(Arc::new(Sphere {
@@ -333,8 +337,20 @@ fn load_texture(filename: &str) -> Option<Image> {
     Some(tex_image)
 }
 
+// https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+fn aces_tonemapping(pixel: DVec3) -> DVec3 {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+
+    return ((pixel * (a * pixel + b)) / (pixel * (c * pixel + d) + e))
+        .clamp(DVec3::ZERO, DVec3::ONE);
+}
+
 fn main() {
-    let width = 1920;
+    let width = 900;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
@@ -347,13 +363,10 @@ fn main() {
 
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
 
-    let samples_per_pixel = 10000;
+    let samples_per_pixel = 200;
     let max_depth = 50;
 
-    //for y in 0..img.size.1 {
-    //    for x in (0..img.size.0).into_par_iter() {
-
-    let colours: Vec<_> = (0..(img.size.0 * img.size.1))
+    (0..(img.size.0 * img.size.1))
         .into_par_iter()
         .map(|index| {
             let (x, y) = (index % width, index / width);
@@ -372,12 +385,14 @@ fn main() {
 
             colour
         })
-        .collect();
-
-    for (i, c) in colours.iter().enumerate() {
-        let (x, y) = (i as u32 % width, i as u32 / width);
-        img.put(x, y, c);
-    }
+        .map(aces_tonemapping)
+        .collect::<Vec<_>>()
+        .iter()
+        .enumerate()
+        .for_each(|(i, pixel)| {
+            let (x, y) = (i as u32 % width, i as u32 / width);
+            img.put(x, y, &pixel);
+        });
 
     println!("\nSaving image");
     write_image(&img, "output.ppm").expect("Writing image failed");

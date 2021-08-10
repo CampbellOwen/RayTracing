@@ -26,7 +26,8 @@ impl Lambertian {
 
 impl Material for Lambertian {
     fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> Option<(Ray, DVec3)> {
-        let mut scatter_direction = hit_record.normal + rand_unit_vector();
+        let mut rng = rand::thread_rng();
+        let mut scatter_direction = hit_record.normal + rand_unit_vector(&mut rng);
 
         // Catch degenerate direction
         if near_zero(scatter_direction) {
@@ -65,12 +66,13 @@ impl Metal {
 impl Material for Metal {
     fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> Option<(Ray, DVec3)> {
         let reflected = reflect(ray.dir.normalize(), hit_record.normal);
+        let mut rng = rand::thread_rng();
 
         if reflected.dot(hit_record.normal) > 0.0 {
             return Some((
                 Ray {
                     origin: hit_record.point,
-                    dir: reflected + (rand_in_unit_sphere() * self.fuzz),
+                    dir: reflected + (rand_in_unit_sphere(&mut rng) * self.fuzz),
                     time: ray.time,
                 },
                 self.albedo,

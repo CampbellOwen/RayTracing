@@ -80,11 +80,12 @@ impl Camera {
     }
 
     pub fn get_ray(&self, s: f64, t: f64) -> Ray {
-        let random_in_lens = rand_in_unit_sphere() * self.lens_radius;
+        let mut rng = rand::thread_rng();
+        let random_in_lens = rand_in_unit_sphere(&mut rng) * self.lens_radius;
         let offset = (self.u * random_in_lens.x) + (self.v * random_in_lens.y);
 
         let time = if (self.time_1 - self.time_0) > 0.000001 {
-            rand::thread_rng().gen_range(self.time_0..self.time_1)
+            rng.gen_range(self.time_0..self.time_1)
         } else {
             0.0
         };
