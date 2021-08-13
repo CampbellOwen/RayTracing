@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use glam::DVec3;
 
-pub trait Texture: Send + Sync {
+pub trait Texture: std::fmt::Debug + Send + Sync {
     fn sample(&self, u: f64, v: f64, p: DVec3) -> DVec3;
 }
 
+#[derive(Debug)]
 pub struct SolidColour {
     pub colour: DVec3,
 }
@@ -16,6 +17,7 @@ impl Texture for SolidColour {
     }
 }
 
+#[derive(Debug)]
 pub struct CheckerTexture {
     pub odd: Arc<dyn Texture>,
     pub even: Arc<dyn Texture>,

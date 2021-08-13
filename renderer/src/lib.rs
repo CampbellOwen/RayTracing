@@ -36,6 +36,9 @@ pub use texture::{CheckerTexture, SolidColour, Texture};
 mod math;
 pub use math::*;
 
+mod mesh;
+pub use mesh::*;
+
 pub fn ray_colour(
     ray: Ray,
     background_colour: &fn(Ray) -> DVec3,

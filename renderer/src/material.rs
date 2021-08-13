@@ -5,13 +5,14 @@ use crate::math::{near_zero, rand_in_unit_sphere, rand_unit_vector, reflect, ref
 use glam::DVec3;
 use rand::Rng;
 
-pub trait Material: Send + Sync {
+pub trait Material: std::fmt::Debug + Send + Sync {
     fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> Option<(Ray, DVec3)>;
     fn emitted(&self, _: f64, _: f64, _: DVec3) -> DVec3 {
         DVec3::new(0.0, 0.0, 0.0)
     }
 }
 
+#[derive(Debug)]
 pub struct Lambertian {
     pub albedo: Arc<dyn Texture>,
 }
@@ -49,6 +50,7 @@ impl Material for Lambertian {
     }
 }
 
+#[derive(Debug)]
 pub struct Metal {
     albedo: DVec3,
     fuzz: f64,
@@ -82,12 +84,13 @@ impl Material for Metal {
     }
 }
 
+#[derive(Debug)]
 pub struct Dielectric {
     pub ior: f64,
 }
 
+/// Schlick's approximation
 fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
-    // Schlick's approximation
     let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
     r0 = r0 * r0;
 
@@ -127,6 +130,7 @@ impl Material for Dielectric {
     }
 }
 
+#[derive(Debug)]
 pub struct DiffuseLight {
     pub emit_colour: Arc<dyn Texture>,
 }

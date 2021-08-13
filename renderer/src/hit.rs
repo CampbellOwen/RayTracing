@@ -4,6 +4,7 @@ use super::{Material, Ray};
 
 use glam::DVec3;
 
+#[derive(Debug)]
 pub struct HitRecord<'material> {
     pub point: DVec3,
     pub normal: DVec3,

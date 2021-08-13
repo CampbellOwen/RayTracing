@@ -1,0 +1,171 @@
+use std::sync::Arc;
+
+use crate::{bounding_box::AABB, hit::HitRecord, hittable::Hittable, material::Material};
+
+use glam::{DVec2, DVec3};
+
+pub struct MeshData {
+    pub vertices: Vec<DVec3>,
+    pub normals: Vec<DVec3>,
+    pub uv: Vec<DVec2>,
+}
+
+struct Triangle {
+    pub vertices: [u32; 3],
+    pub normals: [u32; 3],
+    pub uv: [u32; 3],
+    pub data: Arc<MeshData>,
+    pub material: Arc<dyn Material>,
+}
+
+impl Hittable for Triangle {
+    fn hit(&self, ray: &crate::Ray, _: f64, _: f64) -> Option<HitRecord> {
+        let (v0, v1, v2) = (
+            self.data.vertices[self.vertices[0] as usize],
+            self.data.vertices[self.vertices[1] as usize],
+            self.data.vertices[self.vertices[2] as usize],
+        );
+
+        let edge1 = v1 - v0;
+        let edge2 = v2 - v0;
+        let h = ray.dir.cross(edge2);
+        let det = edge1.dot(h);
+        if det > -f64::EPSILON && det < f64::EPSILON {
+            return None;
+        }
+
+        let back_facing = det < 0.0;
+
+        let det_inv = 1.0 / det;
+        let s = ray.origin - v0;
+
+        let u = det_inv * s.dot(h);
+
+        if u < 0.0 || u > 1.0 {
+            return None;
+        }
+
+        let q = s.cross(edge1);
+        let v = det_inv * ray.dir.dot(q);
+        if v < 0.0 || (u + v) > 1.0 {
+            return None;
+        }
+
+        let t = det_inv * edge2.dot(q);
+        if t <= f64::EPSILON {
+            return None;
+        }
+
+        let (n0, n1, n2) = (
+            self.data.normals[self.normals[0] as usize],
+            self.data.normals[self.normals[1] as usize],
+            self.data.normals[self.normals[2] as usize],
+        );
+
+        let (uv0, uv1, uv2) = (
+            self.data.uv[self.uv[0] as usize],
+            self.data.uv[self.uv[1] as usize],
+            self.data.uv[self.uv[2] as usize],
+        );
+
+        let n = (u * n0) + (v * n1) + ((1.0 - (u + v)) * n2);
+        let uv = (u * uv0) + (v * uv1) + ((1.0 - (u + v)) * uv2);
+
+        Some(HitRecord {
+            point: ray.at(t),
+            material: &self.material,
+            normal: n,
+            u: uv.x,
+            v: uv.y,
+            t,
+            front_face: !back_facing,
+        })
+    }
+
+    fn bounding_box(&self, _: f64, _: f64) -> Option<AABB> {
+        let (min, max) = self
+            .vertices
+            .iter()
+            .map(|index| self.data.vertices[*index as usize])
+            .fold(
+                (DVec3::splat(f64::MAX), DVec3::splat(f64::MIN)),
+                |(min, max), vertex| (DVec3::min(min, vertex), DVec3::max(max, vertex)),
+            );
+
+        Some(AABB { min, max })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Lambertian, Ray};
+
+    #[test]
+    fn bbox() {
+        let meshdata = Arc::new(MeshData {
+            vertices: vec![
+                DVec3::new(-1.0, -1.0, -1.0),
+                DVec3::new(-1.0, 1.0, -1.0),
+                DVec3::new(1.0, 1.1, -1.0),
+            ],
+            uv: Vec::new(),
+            normals: Vec::new(),
+        });
+
+        let triangle = Triangle {
+            vertices: [0, 1, 2],
+            normals: [0, 1, 2],
+            uv: [0, 1, 2],
+            data: meshdata,
+            material: Arc::new(Lambertian::new(DVec3::splat(0.0))),
+        };
+
+        let bbox = triangle.bounding_box(0.0, 0.0).unwrap();
+        assert_eq!(
+            bbox,
+            AABB {
+                min: DVec3::new(-1.0, -1.0, -1.0),
+                max: DVec3::new(1.0, 1.1, -1.0)
+            }
+        )
+    }
+
+    #[test]
+    fn hit() {
+        let meshdata = Arc::new(MeshData {
+            vertices: vec![
+                DVec3::new(-1.0, -1.0, -1.0),
+                DVec3::new(1.0, 1.1, -1.0),
+                DVec3::new(-1.0, 1.0, -1.0),
+            ],
+            uv: vec![
+                DVec2::new(0.0, 0.0),
+                DVec2::new(0.0, 1.0),
+                DVec2::new(1.0, 1.0),
+            ],
+            normals: vec![
+                DVec3::new(0.0, 0.0, -1.0),
+                DVec3::new(0.0, 0.0, -1.0),
+                DVec3::new(0.0, 0.0, -1.0),
+            ],
+        });
+
+        let triangle = Triangle {
+            vertices: [0, 1, 2],
+            normals: [0, 1, 2],
+            uv: [0, 1, 2],
+            data: meshdata,
+            material: Arc::new(Lambertian::new(DVec3::splat(0.0))),
+        };
+
+        let ray = Ray {
+            origin: DVec3::ZERO,
+            dir: DVec3::new(-0.5, 0.0, -1.0),
+            time: 0.0,
+        };
+
+        let hr = triangle.hit(&ray, 0.01, 10.0).unwrap();
+        println!("{:?}", hr);
+    }
+}
