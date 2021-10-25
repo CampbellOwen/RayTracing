@@ -1,12 +1,13 @@
 use exporters::ppm::write_image;
+use glam::DVec2;
 use rand::prelude::*;
 use rand::Rng;
 use rand_pcg::Pcg64;
 
 use renderer::{
     rand_in_range, random, ray_colour, AARect, BVHNode, Camera, CheckerTexture, Dielectric,
-    DiffuseLight, Hittable, Image, Lambertian, Material, Metal, MovingSphere, Ray, SolidColour,
-    Sphere,
+    DiffuseLight, Hittable, Image, Lambertian, Material, MeshData, Metal, MovingSphere, Ray,
+    SolidColour, Sphere, Triangle,
 };
 
 use glam::DVec3;
@@ -30,6 +31,190 @@ fn skybox(ray: Ray) -> DVec3 {
 
 fn no_light(_: Ray) -> DVec3 {
     DVec3::new(0.0, 0.0, 0.0)
+}
+
+fn create_cube(
+    material: Arc<dyn Material>,
+    center: DVec3,
+    width: f64,
+    height: f64,
+    depth: f64,
+) -> Vec<Triangle> {
+    let vertices: Vec<DVec3> = vec![
+        DVec3::new(-0.5, -0.5, 0.5),
+        DVec3::new(0.5, 0.5, 0.5),
+        DVec3::new(-0.5, 0.5, 0.5),
+        DVec3::new(0.5, -0.5, 0.5),
+        DVec3::new(-0.5, -0.5, -0.5),
+        DVec3::new(0.5, 0.5, -0.5),
+        DVec3::new(-0.5, 0.5, -0.5),
+        DVec3::new(0.5, -0.5, -0.5),
+    ]
+    .iter()
+    .map(|v| (*v + center) * DVec3::new(width, height, depth))
+    .collect();
+
+    let normals = vec![
+        DVec3::new(-1.0, 0.0, 0.0),
+        DVec3::new(1.0, 0.0, 0.0),
+        DVec3::new(0.0, -1.0, 0.0),
+        DVec3::new(0.0, 1.0, 0.0),
+        DVec3::new(0.0, 0.0, -1.0),
+        DVec3::new(0.0, 0.0, 1.0),
+    ];
+
+    let uv = vec![
+        DVec2::new(0.0, 0.0),
+        DVec2::new(1.0, 0.0),
+        DVec2::new(0.0, 1.0),
+        DVec2::new(1.0, 1.0),
+    ];
+
+    let meshdata = Arc::new(MeshData {
+        vertices,
+        normals,
+        uv,
+    });
+
+    vec![
+        Triangle {
+            vertices: [0, 1, 2],
+            normals: [5, 5, 5],
+            uv: [0, 3, 2],
+            data: meshdata.clone(),
+            material: material.clone(),
+        },
+        Triangle {
+            vertices: [0, 3, 1],
+            normals: [5, 5, 5],
+            uv: [0, 1, 3],
+            data: meshdata.clone(),
+            material: material.clone(),
+        },
+        Triangle {
+            vertices: [3, 5, 1],
+            normals: [1, 1, 1],
+            uv: [0, 3, 2],
+            data: meshdata.clone(),
+            material: material.clone(),
+        },
+        Triangle {
+            vertices: [3, 7, 5],
+            normals: [1, 1, 1],
+            uv: [0, 1, 3],
+            data: meshdata.clone(),
+            material: material.clone(),
+        },
+        Triangle {
+            vertices: [7, 6, 5],
+            normals: [4, 4, 4],
+            uv: [0, 3, 2],
+            data: meshdata.clone(),
+            material: material.clone(),
+        },
+        Triangle {
+            vertices: [7, 4, 6],
+            normals: [4, 4, 4],
+            uv: [0, 1, 3],
+            data: meshdata.clone(),
+            material: material.clone(),
+        },
+        Triangle {
+            vertices: [4, 2, 6],
+            normals: [0, 0, 0],
+            uv: [0, 3, 2],
+            data: meshdata.clone(),
+            material: material.clone(),
+        },
+        Triangle {
+            vertices: [4, 0, 2],
+            normals: [0, 0, 0],
+            uv: [0, 1, 3],
+            data: meshdata.clone(),
+            material: material.clone(),
+        },
+        Triangle {
+            vertices: [1, 6, 5],
+            normals: [3, 3, 3],
+            uv: [0, 3, 2],
+            data: meshdata.clone(),
+            material: material.clone(),
+        },
+        Triangle {
+            vertices: [1, 2, 6],
+            normals: [3, 3, 3],
+            uv: [0, 1, 3],
+            data: meshdata.clone(),
+            material: material.clone(),
+        },
+        Triangle {
+            vertices: [4, 3, 0],
+            normals: [2, 2, 2],
+            uv: [0, 3, 2],
+            data: meshdata.clone(),
+            material: material.clone(),
+        },
+        Triangle {
+            vertices: [4, 7, 3],
+            normals: [2, 2, 2],
+            uv: [0, 1, 3],
+            data: meshdata.clone(),
+            material: material.clone(),
+        },
+    ]
+}
+
+#[allow(dead_code)]
+fn create_cube_scene() -> SceneDescription {
+    let ground_material: Arc<dyn Material> = Arc::new(Lambertian {
+        albedo: Arc::new(CheckerTexture::new(
+            DVec3::new(0.2, 0.3, 0.1),
+            DVec3::new(0.9, 0.9, 0.9),
+        )),
+    });
+
+    let cube_mat = Arc::new(Lambertian::new(DVec3::splat(0.5)));
+    // let cube_mat: Arc<dyn Material> = Arc::new(Lambertian {
+    //     albedo: Arc::new(load_texture("textures/earthmap.jpg").unwrap()),
+    // });
+
+    let mut world: Vec<Arc<dyn Hittable>> = vec![Arc::new(Sphere {
+        center: DVec3::new(-0.0, -100.5, -1.0),
+        radius: 100.0,
+        material: ground_material.clone(),
+    })];
+
+    let cubeTriangles = create_cube(cube_mat, DVec3::new(0.0, 0.0, -1.0), 1.0, 1.0, 1.0);
+    println!("{:#?}", cubeTriangles);
+
+    cubeTriangles
+        .into_iter()
+        .map(|triangle| Arc::new(triangle) as Arc<dyn Hittable>)
+        .for_each(|triangle| {
+            world.push(triangle);
+        });
+
+    let aspect_ratio = 16.0 / 9.0;
+    let look_from = DVec3::new(1.0, 3.0, 4.0);
+    let look_at = DVec3::new(0.0, 0.0, -1.0);
+    let up = DVec3::new(0.0, 1.0, 0.0);
+
+    let dist_to_focus = (look_at - look_from).length();
+    let aperture = 0.1;
+
+    let camera = Camera::new(
+        look_from,
+        look_at,
+        up,
+        30.0,
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+        0.0,
+        1.0,
+    );
+
+    return (world, camera, skybox);
 }
 
 #[allow(dead_code)]
@@ -356,7 +541,8 @@ fn main() {
 
     let mut img = Image::new((width, height));
 
-    let (world, camera, background_colour) = create_random_scene();
+    let (world, camera, background_colour) = create_cube_scene();
+    //let (world, camera, background_colour) = create_random_scene();
     //let (world, camera, background_colour) = create_simple_scene();
     //let (world, camera, background_colour) = two_spheres();
     //let (world, camera, background_colour) = simple_light();
@@ -378,7 +564,7 @@ fn main() {
                 let v = (y as f64 + rng.gen::<f64>()) / (height - 1) as f64;
 
                 let ray = camera.get_ray(u, v);
-                colour = colour + ray_colour(ray, &background_colour, &bvh, max_depth);
+                colour = colour + ray_colour(ray, &background_colour, &world.as_slice(), max_depth);
             }
 
             colour = colour / (samples_per_pixel as f64);
