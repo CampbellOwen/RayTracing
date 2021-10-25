@@ -1,13 +1,30 @@
-use std::sync::Arc;
+use std::{ops::Mul, sync::Arc};
 
 use super::{HitRecord, Hittable, Material, Ray, AABB};
 
-use glam::DVec3;
+use glam::{DMat4, DVec3, DVec4, Vec4Swizzles};
+
+pub trait Transformable {
+    fn transform(&self, transform: &DMat4) -> Self;
+}
 
 pub struct Sphere {
     pub center: DVec3,
     pub radius: f64,
     pub material: Arc<dyn Material>,
+}
+
+impl Transformable for Sphere {
+    fn transform(&self, transform: &DMat4) -> Sphere {
+        let o: DVec4 = DVec4::from((self.center, 1.0));
+        let r: DVec4 = DVec4::from((o.xy(), o.z + self.radius, 0.0));
+
+        Sphere {
+            center: transform.mul(o).xyz(),
+            radius: transform.mul(r).length(),
+            material: self.material.clone(),
+        }
+    }
 }
 
 pub trait Spherical {

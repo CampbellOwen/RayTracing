@@ -4,13 +4,14 @@ use rand::prelude::*;
 use rand::Rng;
 use rand_pcg::Pcg64;
 
+use renderer::Transformable;
 use renderer::{
     rand_in_range, random, ray_colour, AARect, BVHNode, Camera, CheckerTexture, Dielectric,
     DiffuseLight, Hittable, Image, Lambertian, Material, MeshData, Metal, MovingSphere, Ray,
     SolidColour, Sphere, Triangle,
 };
 
-use glam::DVec3;
+use glam::{DMat4, DVec3};
 
 use rayon::prelude::*;
 
@@ -184,10 +185,10 @@ fn create_cube_scene() -> SceneDescription {
         material: ground_material.clone(),
     })];
 
-    let cubeTriangles = create_cube(cube_mat, DVec3::new(0.0, 0.0, -1.0), 1.0, 1.0, 1.0);
-    println!("{:#?}", cubeTriangles);
+    let cube_triangles = create_cube(cube_mat, DVec3::new(0.0, 0.0, -1.0), 1.0, 1.0, 1.0);
+    println!("{:#?}", cube_triangles);
 
-    cubeTriangles
+    cube_triangles
         .into_iter()
         .map(|triangle| Arc::new(triangle) as Arc<dyn Hittable>)
         .for_each(|triangle| {
@@ -257,11 +258,17 @@ fn create_simple_scene() -> SceneDescription {
             radius: 0.5,
             material: right_material.clone(),
         }),
-        Arc::new(Sphere {
-            center: DVec3::new(0.3, -0.2, -0.5),
-            radius: 0.2,
-            material: shiny_metal_material.clone(),
-        }),
+        Arc::new(
+            Sphere {
+                center: DVec3::new(0.0, 0.0, 0.0),
+                radius: 1.0,
+                material: shiny_metal_material.clone(),
+            }
+            .transform(
+                &(DMat4::from_scale(DVec3::new(0.5, 0.5, 0.5))
+                    * DMat4::from_translation(DVec3::new(0.0, 2.0, 0.0))),
+            ),
+        ),
         Arc::new(Sphere {
             center: DVec3::new(-0.0, -100.5, -1.0),
             radius: 100.0,
@@ -449,6 +456,65 @@ fn two_spheres() -> SceneDescription {
     );
 }
 
+fn simple_triangle_scene() -> SceneDescription {
+    let ground_material: Arc<dyn Material> = Arc::new(Lambertian {
+        albedo: Arc::new(CheckerTexture::new(
+            DVec3::new(0.2, 0.3, 0.1),
+            DVec3::new(0.9, 0.9, 0.9),
+        )),
+    });
+
+    let triangle_mat = Arc::new(Lambertian::new(DVec3::splat(0.5)));
+
+    let mut world: Vec<Arc<dyn Hittable>> = vec![Arc::new(Sphere {
+        center: DVec3::new(-0.0, -100.5, -1.0),
+        radius: 100.0,
+        material: ground_material.clone(),
+    })];
+
+    let mesh_data = Arc::new(MeshData {
+        vertices: vec![
+            DVec3::new(-1.0, 1.0, -1.0),
+            DVec3::new(1.0, 1.0, -1.0),
+            DVec3::new(0.0, 2.0, 0.0),
+        ],
+        normals: vec![DVec3::new(0.0, 0.0, 1.0)],
+        uv: vec![DVec2::new(0.0, 0.0)],
+    });
+
+    let triangle = Arc::new(Triangle {
+        vertices: [0, 1, 2],
+        normals: [0, 0, 0],
+        uv: [0, 0, 0],
+        data: mesh_data,
+        material: triangle_mat,
+    });
+
+    world.push(triangle);
+
+    let aspect_ratio = 16.0 / 9.0;
+    let look_from = DVec3::new(0.0, 1.0, 4.0);
+    let look_at = DVec3::new(0.0, 1.0, -1.0);
+    let up = DVec3::new(0.0, 1.0, 0.0);
+
+    let dist_to_focus = (look_at - look_from).length();
+    let aperture = 0.1;
+
+    let camera = Camera::new(
+        look_from,
+        look_at,
+        up,
+        70.0,
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+        0.0,
+        1.0,
+    );
+
+    return (world, camera, skybox);
+}
+
 #[allow(dead_code)]
 fn simple_light() -> SceneDescription {
     let world: Vec<Arc<dyn Hittable>> = vec![
@@ -541,13 +607,13 @@ fn main() {
 
     let mut img = Image::new((width, height));
 
-    let (world, camera, background_colour) = create_cube_scene();
+    //let (world, camera, background_colour) = simple_triangle_scene();
     //let (world, camera, background_colour) = create_random_scene();
-    //let (world, camera, background_colour) = create_simple_scene();
+    let (world, camera, background_colour) = create_simple_scene();
     //let (world, camera, background_colour) = two_spheres();
     //let (world, camera, background_colour) = simple_light();
 
-    let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
+    //let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
 
     let samples_per_pixel = 200;
     let max_depth = 50;
