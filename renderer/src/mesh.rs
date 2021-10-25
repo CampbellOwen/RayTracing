@@ -1,16 +1,18 @@
 use std::sync::Arc;
 
-use crate::{bounding_box::AABB, hit::HitRecord, hittable::Hittable, material::Material};
+use crate::{bounding_box::AABB, hit::HitRecord, hittable::Hittable, material::Material, ray::Ray};
 
 use glam::{DVec2, DVec3};
 
+#[derive(Debug)]
 pub struct MeshData {
     pub vertices: Vec<DVec3>,
     pub normals: Vec<DVec3>,
     pub uv: Vec<DVec2>,
 }
 
-struct Triangle {
+#[derive(Debug)]
+pub struct Triangle {
     pub vertices: [u32; 3],
     pub normals: [u32; 3],
     pub uv: [u32; 3],
@@ -19,7 +21,7 @@ struct Triangle {
 }
 
 impl Hittable for Triangle {
-    fn hit(&self, ray: &crate::Ray, _: f64, _: f64) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, _: f64, _: f64) -> Option<HitRecord> {
         let (v0, v1, v2) = (
             self.data.vertices[self.vertices[0] as usize],
             self.data.vertices[self.vertices[1] as usize],
@@ -33,8 +35,6 @@ impl Hittable for Triangle {
         if det > -f64::EPSILON && det < f64::EPSILON {
             return None;
         }
-
-        let back_facing = det < 0.0;
 
         let det_inv = 1.0 / det;
         let s = ray.origin - v0;
@@ -78,7 +78,7 @@ impl Hittable for Triangle {
             u: uv.x,
             v: uv.y,
             t,
-            front_face: !back_facing,
+            front_face: ray.dir.dot(n) > 0.0,
         })
     }
 
@@ -135,19 +135,19 @@ mod tests {
     fn hit() {
         let meshdata = Arc::new(MeshData {
             vertices: vec![
-                DVec3::new(-1.0, -1.0, -1.0),
-                DVec3::new(1.0, 1.1, -1.0),
-                DVec3::new(-1.0, 1.0, -1.0),
+                DVec3::new(1.0, 0.0, -1.0),
+                DVec3::new(0.0, 1.0, -1.0),
+                DVec3::new(0.0, 0.0, -1.0),
             ],
             uv: vec![
-                DVec2::new(0.0, 0.0),
+                DVec2::new(1.0, 0.0),
                 DVec2::new(0.0, 1.0),
-                DVec2::new(1.0, 1.0),
+                DVec2::new(0.0, 0.0),
             ],
             normals: vec![
-                DVec3::new(0.0, 0.0, -1.0),
-                DVec3::new(0.0, 0.0, -1.0),
-                DVec3::new(0.0, 0.0, -1.0),
+                DVec3::new(0.0, 0.0, 1.0),
+                DVec3::new(0.0, 0.0, 1.0),
+                DVec3::new(0.0, 0.0, 1.0),
             ],
         });
 
@@ -161,11 +161,13 @@ mod tests {
 
         let ray = Ray {
             origin: DVec3::ZERO,
-            dir: DVec3::new(-0.5, 0.0, -1.0),
+            dir: DVec3::new(0.5, 0.5, -1.0).normalize(),
             time: 0.0,
         };
 
         let hr = triangle.hit(&ray, 0.01, 10.0).unwrap();
-        println!("{:?}", hr);
+        println!("{:#?}", hr);
+
+        println!("{:#?}", ray.at(hr.t));
     }
 }
