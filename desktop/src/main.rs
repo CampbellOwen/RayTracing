@@ -7,7 +7,7 @@ use rand_pcg::Pcg64;
 use renderer::Transformable;
 use renderer::{
     rand_in_range, random, ray_colour, AARect, BVHNode, Camera, CheckerTexture, Dielectric,
-    DiffuseLight, Hittable, Image, Lambertian, Material, MeshData, Metal, MovingSphere, Ray,
+    DiffuseLight, Hittable, Image, Lambertian, Material, Mesh, Metal, MovingSphere, Ray,
     SolidColour, Sphere, Triangle,
 };
 
@@ -16,6 +16,9 @@ use glam::{DMat4, DVec3};
 use rayon::prelude::*;
 
 use std::sync::Arc;
+
+use importers::obj::load_obj;
+mod importers;
 
 mod exporters;
 
@@ -71,7 +74,7 @@ fn create_cube(
         DVec2::new(1.0, 1.0),
     ];
 
-    let meshdata = Arc::new(MeshData {
+    let meshdata = Arc::new(Mesh {
         vertices,
         normals,
         uv,
@@ -472,7 +475,7 @@ fn simple_triangle_scene() -> SceneDescription {
         material: ground_material.clone(),
     })];
 
-    let mesh_data = Arc::new(MeshData {
+    let mesh_data = Arc::new(Mesh {
         vertices: vec![
             DVec3::new(-1.0, 1.0, -1.0),
             DVec3::new(1.0, 1.0, -1.0),
