@@ -9,24 +9,47 @@ pub struct Mesh {
     pub vertices: Vec<DVec3>,
     pub normals: Vec<DVec3>,
     pub uv: Vec<DVec2>,
-    pub triangles: Vec<Triangle>,
+    pub material: Arc<dyn Material>,
+}
+
+pub fn create_mesh(
+    vertices: Vec<DVec3>,
+    normals: Vec<DVec3>,
+    uv: Vec<DVec2>,
+    indices: Vec<[u32; 3]>,
+    material: Arc<dyn Material>,
+) -> Vec<Arc<Triangle>> {
+    let mesh = Arc::new(Mesh {
+        vertices,
+        normals,
+        uv,
+        material,
+    });
+
+    let mut triangles = Vec::new();
+
+    for indices in indices {
+        triangles.push(Arc::new(Triangle {
+            indices: indices,
+            data: mesh.clone(),
+        }));
+    }
+
+    triangles
 }
 
 #[derive(Debug)]
 pub struct Triangle {
-    pub vertices: [u32; 3],
-    pub normals: [u32; 3],
-    pub uv: [u32; 3],
+    pub indices: [u32; 3],
     pub data: Arc<Mesh>,
-    pub material: Arc<dyn Material>,
 }
 
 impl Hittable for Triangle {
     fn hit(&self, ray: &Ray, _: f64, _: f64) -> Option<HitRecord> {
         let (v0, v1, v2) = (
-            self.data.vertices[self.vertices[0] as usize],
-            self.data.vertices[self.vertices[1] as usize],
-            self.data.vertices[self.vertices[2] as usize],
+            self.data.vertices[self.indices[0] as usize],
+            self.data.vertices[self.indices[1] as usize],
+            self.data.vertices[self.indices[2] as usize],
         );
 
         let edge1 = v1 - v0;
@@ -58,15 +81,15 @@ impl Hittable for Triangle {
         }
 
         let (n0, n1, n2) = (
-            self.data.normals[self.normals[0] as usize],
-            self.data.normals[self.normals[1] as usize],
-            self.data.normals[self.normals[2] as usize],
+            self.data.normals[self.indices[0] as usize],
+            self.data.normals[self.indices[1] as usize],
+            self.data.normals[self.indices[2] as usize],
         );
 
         let (uv0, uv1, uv2) = (
-            self.data.uv[self.uv[0] as usize],
-            self.data.uv[self.uv[1] as usize],
-            self.data.uv[self.uv[2] as usize],
+            self.data.uv[self.indices[0] as usize],
+            self.data.uv[self.indices[1] as usize],
+            self.data.uv[self.indices[2] as usize],
         );
 
         let n = (u * n0) + (v * n1) + ((1.0 - (u + v)) * n2);
@@ -74,7 +97,7 @@ impl Hittable for Triangle {
 
         Some(HitRecord {
             point: ray.at(t),
-            material: &self.material,
+            material: &self.data.material,
             normal: n,
             u: uv.x,
             v: uv.y,
@@ -85,7 +108,7 @@ impl Hittable for Triangle {
 
     fn bounding_box(&self, _: f64, _: f64) -> Option<AABB> {
         let (min, max) = self
-            .vertices
+            .indices
             .iter()
             .map(|index| self.data.vertices[*index as usize])
             .fold(
@@ -112,15 +135,12 @@ mod tests {
             ],
             uv: Vec::new(),
             normals: Vec::new(),
-            triangles: Vec::new(),
+            material: Arc::new(Lambertian::new(DVec3::splat(0.0))),
         });
 
         let triangle = Triangle {
-            vertices: [0, 1, 2],
-            normals: [0, 1, 2],
-            uv: [0, 1, 2],
+            indices: [0, 1, 2],
             data: meshdata,
-            material: Arc::new(Lambertian::new(DVec3::splat(0.0))),
         };
 
         let bbox = triangle.bounding_box(0.0, 0.0).unwrap();
@@ -151,15 +171,12 @@ mod tests {
                 DVec3::new(0.0, 0.0, 1.0),
                 DVec3::new(0.0, 0.0, 1.0),
             ],
-            triangles: Vec::new(),
+            material: Arc::new(Lambertian::new(DVec3::splat(0.0))),
         });
 
         let triangle = Triangle {
-            vertices: [0, 1, 2],
-            normals: [0, 1, 2],
-            uv: [0, 1, 2],
+            indices: [0, 1, 2],
             data: meshdata,
-            material: Arc::new(Lambertian::new(DVec3::splat(0.0))),
         };
 
         let ray = Ray {
