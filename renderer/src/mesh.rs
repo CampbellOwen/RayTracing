@@ -18,7 +18,7 @@ pub fn create_mesh(
     uv: Vec<DVec2>,
     indices: Vec<[u32; 3]>,
     material: Arc<dyn Material>,
-) -> Vec<Arc<Triangle>> {
+) -> Vec<Triangle> {
     let mesh = Arc::new(Mesh {
         vertices,
         normals,
@@ -29,10 +29,10 @@ pub fn create_mesh(
     let mut triangles = Vec::new();
 
     for indices in indices {
-        triangles.push(Arc::new(Triangle {
+        triangles.push(Triangle {
             indices: indices,
             data: mesh.clone(),
-        }));
+        });
     }
 
     triangles

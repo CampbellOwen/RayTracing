@@ -4,6 +4,7 @@ use rand::prelude::*;
 use rand::Rng;
 use rand_pcg::Pcg64;
 
+use renderer::create_mesh;
 use renderer::Transformable;
 use renderer::{
     rand_in_range, random, ray_colour, AARect, BVHNode, Camera, CheckerTexture, Dielectric,
@@ -37,137 +38,6 @@ fn no_light(_: Ray) -> DVec3 {
     DVec3::new(0.0, 0.0, 0.0)
 }
 
-fn create_cube(
-    material: Arc<dyn Material>,
-    center: DVec3,
-    width: f64,
-    height: f64,
-    depth: f64,
-) -> Vec<Triangle> {
-    let vertices: Vec<DVec3> = vec![
-        DVec3::new(-0.5, -0.5, 0.5),
-        DVec3::new(0.5, 0.5, 0.5),
-        DVec3::new(-0.5, 0.5, 0.5),
-        DVec3::new(0.5, -0.5, 0.5),
-        DVec3::new(-0.5, -0.5, -0.5),
-        DVec3::new(0.5, 0.5, -0.5),
-        DVec3::new(-0.5, 0.5, -0.5),
-        DVec3::new(0.5, -0.5, -0.5),
-    ]
-    .iter()
-    .map(|v| (*v + center) * DVec3::new(width, height, depth))
-    .collect();
-
-    let normals = vec![
-        DVec3::new(-1.0, 0.0, 0.0),
-        DVec3::new(1.0, 0.0, 0.0),
-        DVec3::new(0.0, -1.0, 0.0),
-        DVec3::new(0.0, 1.0, 0.0),
-        DVec3::new(0.0, 0.0, -1.0),
-        DVec3::new(0.0, 0.0, 1.0),
-    ];
-
-    let uv = vec![
-        DVec2::new(0.0, 0.0),
-        DVec2::new(1.0, 0.0),
-        DVec2::new(0.0, 1.0),
-        DVec2::new(1.0, 1.0),
-    ];
-
-    let meshdata = Arc::new(Mesh {
-        vertices,
-        normals,
-        uv,
-    });
-
-    vec![
-        Triangle {
-            vertices: [0, 1, 2],
-            normals: [5, 5, 5],
-            uv: [0, 3, 2],
-            data: meshdata.clone(),
-            material: material.clone(),
-        },
-        Triangle {
-            vertices: [0, 3, 1],
-            normals: [5, 5, 5],
-            uv: [0, 1, 3],
-            data: meshdata.clone(),
-            material: material.clone(),
-        },
-        Triangle {
-            vertices: [3, 5, 1],
-            normals: [1, 1, 1],
-            uv: [0, 3, 2],
-            data: meshdata.clone(),
-            material: material.clone(),
-        },
-        Triangle {
-            vertices: [3, 7, 5],
-            normals: [1, 1, 1],
-            uv: [0, 1, 3],
-            data: meshdata.clone(),
-            material: material.clone(),
-        },
-        Triangle {
-            vertices: [7, 6, 5],
-            normals: [4, 4, 4],
-            uv: [0, 3, 2],
-            data: meshdata.clone(),
-            material: material.clone(),
-        },
-        Triangle {
-            vertices: [7, 4, 6],
-            normals: [4, 4, 4],
-            uv: [0, 1, 3],
-            data: meshdata.clone(),
-            material: material.clone(),
-        },
-        Triangle {
-            vertices: [4, 2, 6],
-            normals: [0, 0, 0],
-            uv: [0, 3, 2],
-            data: meshdata.clone(),
-            material: material.clone(),
-        },
-        Triangle {
-            vertices: [4, 0, 2],
-            normals: [0, 0, 0],
-            uv: [0, 1, 3],
-            data: meshdata.clone(),
-            material: material.clone(),
-        },
-        Triangle {
-            vertices: [1, 6, 5],
-            normals: [3, 3, 3],
-            uv: [0, 3, 2],
-            data: meshdata.clone(),
-            material: material.clone(),
-        },
-        Triangle {
-            vertices: [1, 2, 6],
-            normals: [3, 3, 3],
-            uv: [0, 1, 3],
-            data: meshdata.clone(),
-            material: material.clone(),
-        },
-        Triangle {
-            vertices: [4, 3, 0],
-            normals: [2, 2, 2],
-            uv: [0, 3, 2],
-            data: meshdata.clone(),
-            material: material.clone(),
-        },
-        Triangle {
-            vertices: [4, 7, 3],
-            normals: [2, 2, 2],
-            uv: [0, 1, 3],
-            data: meshdata.clone(),
-            material: material.clone(),
-        },
-    ]
-}
-
 #[allow(dead_code)]
 fn create_cube_scene() -> SceneDescription {
     let ground_material: Arc<dyn Material> = Arc::new(Lambertian {
@@ -187,16 +57,6 @@ fn create_cube_scene() -> SceneDescription {
         radius: 100.0,
         material: ground_material.clone(),
     })];
-
-    let cube_triangles = create_cube(cube_mat, DVec3::new(0.0, 0.0, -1.0), 1.0, 1.0, 1.0);
-    println!("{:#?}", cube_triangles);
-
-    cube_triangles
-        .into_iter()
-        .map(|triangle| Arc::new(triangle) as Arc<dyn Hittable>)
-        .for_each(|triangle| {
-            world.push(triangle);
-        });
 
     let aspect_ratio = 16.0 / 9.0;
     let look_from = DVec3::new(1.0, 3.0, 4.0);
@@ -475,25 +335,31 @@ fn simple_triangle_scene() -> SceneDescription {
         material: ground_material.clone(),
     })];
 
-    let mesh_data = Arc::new(Mesh {
-        vertices: vec![
+    create_mesh(
+        vec![
             DVec3::new(-1.0, 1.0, -1.0),
             DVec3::new(1.0, 1.0, -1.0),
-            DVec3::new(0.0, 2.0, 0.0),
+            DVec3::new(-1.0, 3.0, -1.0),
+            DVec3::new(1.0, 3.0, -1.0),
         ],
-        normals: vec![DVec3::new(0.0, 0.0, 1.0)],
-        uv: vec![DVec2::new(0.0, 0.0)],
-    });
-
-    let triangle = Arc::new(Triangle {
-        vertices: [0, 1, 2],
-        normals: [0, 0, 0],
-        uv: [0, 0, 0],
-        data: mesh_data,
-        material: triangle_mat,
-    });
-
-    world.push(triangle);
+        vec![
+            DVec3::new(0.0, 0.0, 1.0),
+            DVec3::new(0.0, 0.0, 1.0),
+            DVec3::new(0.0, 0.0, 1.0),
+            DVec3::new(0.0, 0.0, 1.0),
+        ],
+        vec![
+            DVec2::new(0.0, 0.0),
+            DVec2::new(1.0, 0.0),
+            DVec2::new(0.0, 1.0),
+            DVec2::new(1.0, 1.0),
+        ],
+        vec![[0, 1, 2], [1, 3, 2]],
+        triangle_mat,
+    )
+    .into_iter()
+    .map(|triangle| Arc::new(triangle) as Arc<dyn Hittable>)
+    .for_each(|triangle| world.push(triangle));
 
     let aspect_ratio = 16.0 / 9.0;
     let look_from = DVec3::new(0.0, 1.0, 4.0);
@@ -570,6 +436,38 @@ fn simple_light() -> SceneDescription {
     return (world, camera, no_light);
 }
 
+fn mesh_scene() -> SceneDescription {
+    let mut world: Vec<Arc<dyn Hittable>> = Vec::new();
+
+    let triangle_mat = Arc::new(Lambertian::new(DVec3::splat(0.5)));
+    let test_mesh = load_obj(
+        "F:\\Models\\JapaneseTemple\\model_triangulated.obj",
+        triangle_mat,
+    )
+    .unwrap();
+
+    test_mesh.into_iter().for_each(|mesh| {
+        mesh.into_iter()
+            .map(|triangle| Arc::new(triangle) as Arc<dyn Hittable>)
+            .for_each(|triangle| world.push(triangle))
+    });
+
+    let look_from = DVec3::new(0.0, 0.0, 40.0);
+    let look_at = DVec3::new(0.0, 17.0, 0.0);
+
+    let camera = Camera::new_instant(
+        look_from,
+        look_at,
+        DVec3::new(0.0, 1.0, 0.0),
+        50.0,
+        16.0 / 9.0,
+        0.1,
+        (look_at - look_from).length(),
+    );
+
+    return (world, camera, skybox);
+}
+
 fn load_texture(filename: &str) -> Option<Image> {
     let tex = image::open(filename).ok()?.into_rgb8();
     let mut tex_image = Image::new(tex.dimensions());
@@ -611,15 +509,22 @@ fn main() {
     let mut img = Image::new((width, height));
 
     //let (world, camera, background_colour) = simple_triangle_scene();
+    let (world, camera, background_colour) = mesh_scene();
     //let (world, camera, background_colour) = create_random_scene();
-    let (world, camera, background_colour) = create_simple_scene();
+    //let (world, camera, background_colour) = create_simple_scene();
     //let (world, camera, background_colour) = two_spheres();
     //let (world, camera, background_colour) = simple_light();
 
-    //let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
+    println!("Building BVH for scene with {} triangles", world.len());
+    let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
+    println!("Done!");
 
-    let samples_per_pixel = 200;
-    let max_depth = 50;
+    let samples_per_pixel = 50;
+    let max_depth = 5;
+    println!(
+        "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",
+        samples_per_pixel, max_depth, width, height
+    );
 
     (0..(img.size.0 * img.size.1))
         .into_par_iter()
@@ -633,7 +538,7 @@ fn main() {
                 let v = (y as f64 + rng.gen::<f64>()) / (height - 1) as f64;
 
                 let ray = camera.get_ray(u, v);
-                colour = colour + ray_colour(ray, &background_colour, &world.as_slice(), max_depth);
+                colour = colour + ray_colour(ray, &background_colour, &bvh, max_depth);
             }
 
             colour = colour / (samples_per_pixel as f64);
