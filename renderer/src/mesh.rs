@@ -5,10 +5,11 @@ use crate::{bounding_box::AABB, hit::HitRecord, hittable::Hittable, material::Ma
 use glam::{DVec2, DVec3};
 
 #[derive(Debug)]
-pub struct MeshData {
+pub struct Mesh {
     pub vertices: Vec<DVec3>,
     pub normals: Vec<DVec3>,
     pub uv: Vec<DVec2>,
+    pub triangles: Vec<Triangle>,
 }
 
 #[derive(Debug)]
@@ -16,7 +17,7 @@ pub struct Triangle {
     pub vertices: [u32; 3],
     pub normals: [u32; 3],
     pub uv: [u32; 3],
-    pub data: Arc<MeshData>,
+    pub data: Arc<Mesh>,
     pub material: Arc<dyn Material>,
 }
 
@@ -103,7 +104,7 @@ mod tests {
 
     #[test]
     fn bbox() {
-        let meshdata = Arc::new(MeshData {
+        let meshdata = Arc::new(Mesh {
             vertices: vec![
                 DVec3::new(-1.0, -1.0, -1.0),
                 DVec3::new(-1.0, 1.0, -1.0),
@@ -111,6 +112,7 @@ mod tests {
             ],
             uv: Vec::new(),
             normals: Vec::new(),
+            triangles: Vec::new(),
         });
 
         let triangle = Triangle {
@@ -133,7 +135,7 @@ mod tests {
 
     #[test]
     fn hit() {
-        let meshdata = Arc::new(MeshData {
+        let meshdata = Arc::new(Mesh {
             vertices: vec![
                 DVec3::new(1.0, 0.0, -1.0),
                 DVec3::new(0.0, 1.0, -1.0),
@@ -149,6 +151,7 @@ mod tests {
                 DVec3::new(0.0, 0.0, 1.0),
                 DVec3::new(0.0, 0.0, 1.0),
             ],
+            triangles: Vec::new(),
         });
 
         let triangle = Triangle {
