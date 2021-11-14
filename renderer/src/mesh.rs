@@ -45,7 +45,7 @@ pub struct Triangle {
 }
 
 impl Hittable for Triangle {
-    fn hit(&self, ray: &Ray, _: f64, _: f64) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let (v0, v1, v2) = (
             self.data.vertices[self.indices[0] as usize],
             self.data.vertices[self.indices[1] as usize],
@@ -76,7 +76,7 @@ impl Hittable for Triangle {
         }
 
         let t = det_inv * edge2.dot(q);
-        if t <= f64::EPSILON {
+        if t <= f64::EPSILON || t > t_max || t <= t_min {
             return None;
         }
 
