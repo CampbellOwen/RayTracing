@@ -337,24 +337,47 @@ fn simple_triangle_scene() -> SceneDescription {
 
     create_mesh(
         vec![
-            DVec3::new(-1.0, 1.0, -1.0),
-            DVec3::new(1.0, 1.0, -1.0),
-            DVec3::new(-1.0, 3.0, -1.0),
-            DVec3::new(1.0, 3.0, -1.0),
+            DVec3::new(-0.5, -0.5, 0.5),  // Front bottom left
+            DVec3::new(0.5, 0.5, 0.5),    // Front top right
+            DVec3::new(-0.5, 0.5, 0.5),   // Front top left
+            DVec3::new(0.5, -0.5, 0.5),   // Front bottom right
+            DVec3::new(0.5, -0.5, -0.5),  // Back bottom right
+            DVec3::new(0.5, 0.5, -0.5),   // Back top right
+            DVec3::new(-0.5, 0.5, -0.5),  // Back top left
+            DVec3::new(-0.5, -0.5, -0.5), // Back bottom left
         ],
         vec![
             DVec3::new(0.0, 0.0, 1.0),
             DVec3::new(0.0, 0.0, 1.0),
             DVec3::new(0.0, 0.0, 1.0),
             DVec3::new(0.0, 0.0, 1.0),
+            DVec3::new(1.0, 0.0, 0.0),
+            DVec3::new(1.0, 0.0, 0.0),
+            DVec3::new(0.0, 1.0, 0.0),
+            DVec3::new(0.0, -1.0, 0.0),
         ],
         vec![
             DVec2::new(0.0, 0.0),
-            DVec2::new(1.0, 0.0),
-            DVec2::new(0.0, 1.0),
             DVec2::new(1.0, 1.0),
+            DVec2::new(0.0, 1.0),
+            DVec2::new(1.0, 0.0),
+            DVec2::new(1.0, 0.0),
+            DVec2::new(1.0, 1.0),
+            DVec2::new(1.0, 0.0),
+            DVec2::new(0.0, 0.0),
         ],
-        vec![[0, 1, 2], [1, 3, 2]],
+        vec![
+            [0, 1, 2],
+            [0, 3, 1],
+            [3, 4, 1],
+            [4, 5, 1],
+            [2, 1, 6],
+            [1, 5, 6],
+            [7, 0, 2],
+            [7, 2, 6],
+            [6, 5, 7],
+            [7, 5, 4],
+        ],
         triangle_mat,
     )
     .into_iter()
@@ -362,8 +385,8 @@ fn simple_triangle_scene() -> SceneDescription {
     .for_each(|triangle| world.push(triangle));
 
     let aspect_ratio = 16.0 / 9.0;
-    let look_from = DVec3::new(0.0, 1.0, 4.0);
-    let look_at = DVec3::new(0.0, 1.0, -1.0);
+    let look_from = DVec3::new(0.0, 0.5, -2.0);
+    let look_at = DVec3::new(0.0, 0.0, 0.0);
     let up = DVec3::new(0.0, 1.0, 0.0);
 
     let dist_to_focus = (look_at - look_from).length();
@@ -373,7 +396,7 @@ fn simple_triangle_scene() -> SceneDescription {
         look_from,
         look_at,
         up,
-        70.0,
+        90.0,
         aspect_ratio,
         aperture,
         dist_to_focus,
@@ -439,8 +462,21 @@ fn simple_light() -> SceneDescription {
 fn mesh_scene() -> SceneDescription {
     let mut world: Vec<Arc<dyn Hittable>> = Vec::new();
 
-    let triangle_mat = Arc::new(Lambertian::new(DVec3::splat(0.5)));
+    let triangle_mat = Arc::new(Lambertian {
+        albedo: Arc::new(load_texture("F:\\Models\\JapaneseTemple\\Textures\\albedo.png").unwrap()),
+    });
+
+    //let triangle_mat = Arc::new(Lambertian::new(DVec3::splat(0.5)));
+
+    //let test_mesh = load_obj(
+    //    //"F:\\Models\\JapaneseTemple\\model_triangulated.obj",
+    //    "F:\\Models\\cube.obj",
+    //    triangle_mat,
+    //)
+    //.unwrap();
+
     let test_mesh = load_obj(
+        //"F:\\Models\\cube.obj",
         "F:\\Models\\JapaneseTemple\\model_triangulated.obj",
         triangle_mat,
     )
@@ -452,14 +488,14 @@ fn mesh_scene() -> SceneDescription {
             .for_each(|triangle| world.push(triangle))
     });
 
-    let look_from = DVec3::new(0.0, 0.0, 40.0);
-    let look_at = DVec3::new(0.0, 17.0, 0.0);
+    let look_from = DVec3::new(-2.0, 30.0, 30.0);
+    let look_at = DVec3::new(0.0, 15.0, 0.0);
 
     let camera = Camera::new_instant(
         look_from,
         look_at,
         DVec3::new(0.0, 1.0, 0.0),
-        50.0,
+        80.0,
         16.0 / 9.0,
         0.1,
         (look_at - look_from).length(),
@@ -502,7 +538,7 @@ fn aces_tonemapping(pixel: DVec3) -> DVec3 {
 }
 
 fn main() {
-    let width = 900;
+    let width = 1920;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
@@ -519,8 +555,8 @@ fn main() {
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
     println!("Done!");
 
-    let samples_per_pixel = 50;
-    let max_depth = 5;
+    let samples_per_pixel = 500;
+    let max_depth = 50;
     println!(
         "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",
         samples_per_pixel, max_depth, width, height
@@ -538,7 +574,14 @@ fn main() {
                 let v = (y as f64 + rng.gen::<f64>()) / (height - 1) as f64;
 
                 let ray = camera.get_ray(u, v);
-                colour = colour + ray_colour(ray, &background_colour, &bvh, max_depth);
+                colour = colour
+                    + ray_colour(
+                        ray,
+                        &background_colour,
+                        &world.as_slice(),
+                        //&bvh,
+                        max_depth,
+                    );
             }
 
             colour = colour / (samples_per_pixel as f64);
