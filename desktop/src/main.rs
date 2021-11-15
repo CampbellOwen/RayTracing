@@ -460,8 +460,6 @@ fn simple_light() -> SceneDescription {
 }
 
 fn mesh_scene() -> SceneDescription {
-    let mut world: Vec<Arc<dyn Hittable>> = Vec::new();
-
     let triangle_mat = Arc::new(Lambertian {
         albedo: Arc::new(load_texture("F:\\Models\\JapaneseTemple\\Textures\\albedo.png").unwrap()),
     });
@@ -482,6 +480,7 @@ fn mesh_scene() -> SceneDescription {
     )
     .unwrap();
 
+    let mut world: Vec<Arc<dyn Hittable>> = Vec::new();
     test_mesh.into_iter().for_each(|mesh| {
         mesh.into_iter()
             .map(|triangle| Arc::new(triangle) as Arc<dyn Hittable>)
@@ -490,6 +489,8 @@ fn mesh_scene() -> SceneDescription {
 
     let look_from = DVec3::new(-2.0, 30.0, 30.0);
     let look_at = DVec3::new(0.0, 15.0, 0.0);
+    //let look_from = DVec3::new(-2.0, 2.0, 2.0);
+    //let look_at = DVec3::new(0.0, 0.0, 0.0);
 
     let camera = Camera::new_instant(
         look_from,
@@ -538,7 +539,7 @@ fn aces_tonemapping(pixel: DVec3) -> DVec3 {
 }
 
 fn main() {
-    let width = 1920;
+    let width = 800;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
@@ -555,8 +556,8 @@ fn main() {
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
     println!("Done!");
 
-    let samples_per_pixel = 500;
-    let max_depth = 50;
+    let samples_per_pixel = 5;
+    let max_depth = 5;
     println!(
         "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",
         samples_per_pixel, max_depth, width, height
@@ -578,8 +579,8 @@ fn main() {
                     + ray_colour(
                         ray,
                         &background_colour,
-                        &world.as_slice(),
-                        //&bvh,
+                        //&world.as_slice(),
+                        &bvh,
                         max_depth,
                     );
             }

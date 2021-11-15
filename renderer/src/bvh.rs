@@ -86,3 +86,58 @@ impl Hittable for BVHNode {
         Some(self.bbox.clone())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use glam::{DVec2, DVec3};
+
+    use crate::{create_mesh, Lambertian, Ray, SolidColour};
+
+    use super::*;
+
+    #[test]
+    fn intersect() {
+        let vertices = vec![
+            DVec3::new(-1., -1., 0.),
+            DVec3::new(1., 1., 0.),
+            DVec3::new(-1., 1., 0.),
+        ];
+        let normals = vec![
+            DVec3::new(0., 0., 1.),
+            DVec3::new(0., 0., 1.),
+            DVec3::new(0., 0., 1.),
+        ];
+        let uv = vec![
+            DVec2::new(0.0, 0.0),
+            DVec2::new(1.0, 1.0),
+            DVec2::new(0.0, 1.0),
+        ];
+        let indices = vec![[0, 1, 2]];
+
+        let material = Arc::new(Lambertian {
+            albedo: Arc::new(SolidColour {
+                colour: DVec3::splat(0.5),
+            }),
+        });
+        let triangles = create_mesh(vertices, normals, uv, indices, material);
+        let mut world: Vec<Arc<dyn Hittable>> = Vec::new();
+        triangles
+            .into_iter()
+            .map(|triangle| Arc::new(triangle) as Arc<dyn Hittable>)
+            .for_each(|triangle| world.push(triangle));
+
+        let world_as_slice = world.as_slice();
+        let bvh = BVHNode::new(world_as_slice, 0.0, 0.0);
+
+        let ray = Ray {
+            origin: DVec3::new(-0.5, 0.0, 1.0),
+            dir: DVec3::new(0., 0., -1.),
+            time: 0.0,
+        };
+
+        let hit = bvh.hit(&ray, 0.00001, 10000.);
+
+        assert!(hit.is_some());
+        assert_eq!(hit.unwrap().t, 1.0);
+    }
+}
