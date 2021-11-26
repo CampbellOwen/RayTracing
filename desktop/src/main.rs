@@ -1,8 +1,6 @@
 use exporters::ppm::write_image;
 use glam::DVec2;
-use rand::prelude::*;
 use rand::Rng;
-use rand_pcg::Pcg64;
 
 use renderer::create_mesh;
 use renderer::Transformable;
@@ -574,7 +572,7 @@ fn aces_tonemapping(pixel: DVec3) -> DVec3 {
 }
 
 fn main() {
-    let width = 1920;
+    let width = 500;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
@@ -644,8 +642,7 @@ fn main() {
 
             let mut locked_img = img.lock().unwrap();
             locked_img.merge_tile(tile);
-            //write_image(&locked_img, &format!("output{}.ppm", tile_index))
-            //    .expect("Writing image failed");
+            println!("Finished rendering tile {}", tile_index);
         });
 
     println!("\nSaving image");
