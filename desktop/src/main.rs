@@ -574,7 +574,7 @@ fn aces_tonemapping(pixel: DVec3) -> DVec3 {
 }
 
 fn main() {
-    let width = 320;
+    let width = 1920;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
@@ -602,7 +602,7 @@ fn main() {
         (height + tile_size - 1) / (tile_size),
     );
 
-    let img = Arc::new(Mutex::new(Image::new((width, height))));
+    let img = Mutex::new(Image::new((width, height)));
 
     (0..(num_tiles.0 * num_tiles.1))
         .into_par_iter()
