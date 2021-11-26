@@ -16,7 +16,9 @@ use glam::{DMat4, DVec3};
 
 use rayon::prelude::*;
 
+use core::num;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 use importers::obj::load_obj;
 mod importers;
@@ -572,11 +574,9 @@ fn aces_tonemapping(pixel: DVec3) -> DVec3 {
 }
 
 fn main() {
-    let width = 1920;
+    let width = 320;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
-
-    let mut img = Image::new((width, height));
 
     //let (world, camera, background_colour) = simple_triangle_scene();
     let (world, camera, background_colour) = mesh_scene();
@@ -589,48 +589,66 @@ fn main() {
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
     println!("Done!");
 
-    let samples_per_pixel = 1000;
+    let samples_per_pixel = 5;
     let max_depth = 50;
     println!(
         "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",
         samples_per_pixel, max_depth, width, height
     );
 
-    (0..(img.size.0 * img.size.1))
+    let tile_size = 16;
+    let num_tiles = (
+        (width + tile_size - 1) / (tile_size),
+        (height + tile_size - 1) / (tile_size),
+    );
+
+    let img = Arc::new(Mutex::new(Image::new((width, height))));
+
+    (0..(num_tiles.0 * num_tiles.1))
         .into_par_iter()
-        .map(|index| {
-            let (x, y) = (index % width, index / width);
+        .for_each(|tile_index| {
+            let tile_xy = (tile_index % num_tiles.0, tile_index / num_tiles.0);
+            let tile_origin = (tile_xy.0 * tile_size, tile_xy.1 * tile_size);
+
+            let locked_img = img.lock().unwrap();
+            let mut tile = locked_img.get_tile(tile_origin, (tile_size, tile_size));
+
+            std::mem::drop(locked_img);
+
             let mut rng = rand::thread_rng();
+            for index in 0..(tile.size.0 * tile.size.1) {
+                let (x, y) = tile.get_xy(index);
 
-            let mut colour = DVec3::new(0.0, 0.0, 0.0);
-            for _ in 0..samples_per_pixel {
-                let u = (x as f64 + rng.gen::<f64>()) / (width - 1) as f64;
-                let v = (y as f64 + rng.gen::<f64>()) / (height - 1) as f64;
+                let mut colour = DVec3::new(0.0, 0.0, 0.0);
+                for _ in 0..samples_per_pixel {
+                    let u = (x as f64 + rng.gen::<f64>()) / (width - 1) as f64;
+                    let v = (y as f64 + rng.gen::<f64>()) / (height - 1) as f64;
 
-                let ray = camera.get_ray(u, v);
-                colour = colour
-                    + ray_colour(
-                        ray,
-                        &background_colour,
-                        //&world.as_slice(),
-                        &bvh,
-                        max_depth,
-                    );
+                    let ray = camera.get_ray(u, v);
+                    colour = colour
+                        + ray_colour(
+                            ray,
+                            &background_colour,
+                            //&world.as_slice(),
+                            &bvh,
+                            max_depth,
+                        );
+                }
+
+                colour = colour / (samples_per_pixel as f64);
+
+                colour = aces_tonemapping(colour);
+
+                tile.pixels[index as usize] = colour;
             }
 
-            colour = colour / (samples_per_pixel as f64);
-
-            colour
-        })
-        .map(aces_tonemapping)
-        .collect::<Vec<_>>()
-        .iter()
-        .enumerate()
-        .for_each(|(i, pixel)| {
-            let (x, y) = (i as u32 % width, i as u32 / width);
-            img.put(x, y, &pixel);
+            let mut locked_img = img.lock().unwrap();
+            locked_img.merge_tile(tile);
+            //write_image(&locked_img, &format!("output{}.ppm", tile_index))
+            //    .expect("Writing image failed");
         });
 
     println!("\nSaving image");
-    write_image(&img, "output.ppm").expect("Writing image failed");
+    let locked_image = img.lock().unwrap();
+    write_image(&locked_image, "output.ppm").expect("Writing image failed");
 }
