@@ -487,6 +487,39 @@ fn mesh_scene() -> SceneDescription {
             .for_each(|triangle| world.push(triangle))
     });
 
+    let ground_material: Arc<dyn Material> = Arc::new(Lambertian {
+        albedo: Arc::new(CheckerTexture::new(
+            DVec3::new(0.2, 0.3, 0.1),
+            DVec3::new(0.9, 0.9, 0.9),
+        )),
+    });
+
+    world.push(Arc::new(Sphere {
+        center: DVec3::new(40.0, 40.0, 20.0),
+        radius: 25.0,
+        material: Arc::new(DiffuseLight {
+            emit_colour: Arc::new(SolidColour {
+                colour: DVec3::new(4.0, 4.0, 4.0),
+            }),
+        }),
+    }));
+
+    world.push(Arc::new(Sphere {
+        center: DVec3::new(-40.0, 40.0, 20.0),
+        radius: 25.0,
+        material: Arc::new(DiffuseLight {
+            emit_colour: Arc::new(SolidColour {
+                colour: DVec3::new(4.0, 4.0, 4.0),
+            }),
+        }),
+    }));
+
+    world.push(Arc::new(Sphere {
+        center: DVec3::new(0.0, -1000.0, 0.0),
+        radius: 1000.0,
+        material: ground_material,
+    }));
+
     let look_from = DVec3::new(-2.0, 30.0, 30.0);
     let look_at = DVec3::new(0.0, 15.0, 0.0);
     //let look_from = DVec3::new(-2.0, 2.0, 2.0);
@@ -502,7 +535,7 @@ fn mesh_scene() -> SceneDescription {
         (look_at - look_from).length(),
     );
 
-    return (world, camera, skybox);
+    return (world, camera, no_light);
 }
 
 fn load_texture(filename: &str) -> Option<Image> {
@@ -539,7 +572,7 @@ fn aces_tonemapping(pixel: DVec3) -> DVec3 {
 }
 
 fn main() {
-    let width = 800;
+    let width = 1920;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
@@ -556,8 +589,8 @@ fn main() {
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
     println!("Done!");
 
-    let samples_per_pixel = 5;
-    let max_depth = 5;
+    let samples_per_pixel = 1000;
+    let max_depth = 50;
     println!(
         "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",
         samples_per_pixel, max_depth, width, height
