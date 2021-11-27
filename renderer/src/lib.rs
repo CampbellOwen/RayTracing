@@ -39,6 +39,9 @@ pub use math::*;
 mod mesh;
 pub use mesh::*;
 
+mod transform;
+pub use transform::*;
+
 pub fn ray_colour(
     ray: Ray,
     background_colour: &fn(Ray) -> DVec3,

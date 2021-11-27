@@ -41,7 +41,18 @@ impl Image {
     pub fn put(&mut self, x: u32, y: u32, colour: &DVec3) {
         let index: usize = (y * self.size.0) as usize + x as usize;
 
-        self.data[index] = *colour;
+        let mut colour = colour.clone();
+        if colour.x != colour.x {
+            colour.x = 0.0;
+        }
+        if colour.y != colour.y {
+            colour.y = 0.0;
+        }
+        if colour.z != colour.z {
+            colour.z = 0.0;
+        }
+
+        self.data[index] = colour;
     }
 
     pub fn get_tile(&self, origin: (u32, u32), size: (u32, u32)) -> ImageTile {

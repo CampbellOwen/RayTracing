@@ -4,6 +4,7 @@ use rand::Rng;
 
 use renderer::create_mesh;
 use renderer::Transformable;
+use renderer::Transformed;
 use renderer::{
     rand_in_range, random, ray_colour, AARect, BVHNode, Camera, CheckerTexture, Dielectric,
     DiffuseLight, Hittable, Image, Lambertian, Material, Mesh, Metal, MovingSphere, Ray,
@@ -81,6 +82,191 @@ fn create_cube_scene() -> SceneDescription {
 
     return (world, camera, skybox);
 }
+fn create_cornell_scene() -> SceneDescription {
+    let ground_material: Arc<dyn Material> = Arc::new(Lambertian {
+        albedo: Arc::new(CheckerTexture::new(
+            DVec3::new(0.2, 0.3, 0.1),
+            DVec3::new(0.9, 0.9, 0.9),
+        )),
+    });
+
+    let sphere_material = Arc::new(Metal::new(DVec3::new(0.8, 0.6, 0.2), 0.2));
+
+    let mut world: Vec<Arc<dyn Hittable>> = vec![
+        //Arc::new(Transformed::new(
+        //    DMat4::from_scale(DVec3::new(1.5, 0.01, 1.5)),
+        //    Arc::new(Sphere {
+        //        center: DVec3::ZERO,
+        //        radius: 1.0,
+        //        material: sphere_material.clone(),
+        //    }),
+        //)),
+        Arc::new(Sphere {
+            center: DVec3::new(-0.0, -101.0, -1.0),
+            radius: 100.0,
+            material: ground_material.clone(),
+        }),
+    ];
+
+    let grey_material = Arc::new(Lambertian::new(DVec3::splat(0.1)));
+    let grey_cube = Arc::new(BVHNode::from_mesh(
+        load_obj("F:\\Models\\cube.obj", grey_material.clone())
+            .unwrap()
+            .pop()
+            .unwrap(),
+        0.0,
+        0.0,
+    ));
+
+    let lit_material = Arc::new(DiffuseLight {
+        emit_colour: Arc::new(SolidColour {
+            colour: DVec3::splat(1.0),
+        }),
+    });
+
+    let lit_cube = Arc::new(BVHNode::from_mesh(
+        load_obj("F:\\Models\\cube.obj", lit_material.clone())
+            .unwrap()
+            .pop()
+            .unwrap(),
+        0.0,
+        0.0,
+    ));
+
+    let red_material = Arc::new(Lambertian::new(DVec3::new(1.0, 0.0, 0.0)));
+    let red_cube = Arc::new(BVHNode::from_mesh(
+        load_obj("F:\\Models\\cube.obj", red_material.clone())
+            .unwrap()
+            .pop()
+            .unwrap(),
+        0.0,
+        0.0,
+    ));
+
+    let green_material = Arc::new(Lambertian::new(DVec3::new(0.0, 1.0, 0.0)));
+    let green_cube = Arc::new(BVHNode::from_mesh(
+        load_obj("F:\\Models\\cube.obj", green_material.clone())
+            .unwrap()
+            .pop()
+            .unwrap(),
+        0.0,
+        0.0,
+    ));
+
+    let back_wall_transform = DMat4::from_translation(DVec3::new(0.0, 0.0, -1.5))
+        * DMat4::from_scale(DVec3::new(1.5, 1.5, 0.01));
+    let back_wall = Transformed::new(back_wall_transform, lit_cube.clone());
+    world.push(Arc::new(back_wall));
+
+    let right_wall_transform = DMat4::from_translation(DVec3::new(1.5, 0.0, 0.0))
+        * DMat4::from_scale(DVec3::new(0.001, 1.5, 1.5));
+    let right_wall = Transformed::new(right_wall_transform, red_cube.clone());
+    world.push(Arc::new(right_wall));
+
+    let left_wall_transform = DMat4::from_translation(DVec3::new(-1.5, 0.0, 0.0))
+        * DMat4::from_scale(DVec3::new(0.001, 1.5, 1.5));
+    let left_wall = Transformed::new(left_wall_transform, green_cube.clone());
+    world.push(Arc::new(left_wall));
+
+    let floor_transform = DMat4::from_translation(DVec3::new(0.0, -1.0, 0.0))
+        * DMat4::from_scale(DVec3::new(1.5, 0.1, 2.0));
+    let floor = Transformed::new(floor_transform, grey_cube.clone());
+    world.push(Arc::new(floor));
+
+    let ceiling_transform = DMat4::from_translation(DVec3::new(0.0, 1.0, 0.0))
+        * DMat4::from_scale(DVec3::new(1.5, 0.1, 2.0));
+    let ceiling = Transformed::new(ceiling_transform, grey_cube.clone());
+    world.push(Arc::new(ceiling));
+
+    let aspect_ratio = 16.0 / 9.0;
+    let look_from = DVec3::new(0.0, 0.0, 5.0);
+    let look_at = DVec3::new(0.0, 0.0, 0.0);
+    let up = DVec3::new(0.0, 1.0, 0.0);
+
+    let dist_to_focus = (look_at - look_from).length();
+    let aperture = 0.1;
+
+    let camera = Camera::new(
+        look_from,
+        look_at,
+        up,
+        30.0,
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+        0.0,
+        1.0,
+    );
+
+    return (world, camera, no_light);
+}
+fn create_sphere_scene() -> SceneDescription {
+    let ground_material: Arc<dyn Material> = Arc::new(Lambertian {
+        albedo: Arc::new(CheckerTexture::new(
+            DVec3::new(0.2, 0.3, 0.1),
+            DVec3::new(0.9, 0.9, 0.9),
+        )),
+    });
+
+    let sphere_material = Arc::new(Metal::new(DVec3::new(0.8, 0.6, 0.2), 0.2));
+
+    let mut world: Vec<Arc<dyn Hittable>> = vec![
+        //Arc::new(Transformed::new(
+        //    DMat4::from_scale(DVec3::new(1.5, 0.01, 1.5)),
+        //    Arc::new(Sphere {
+        //        center: DVec3::ZERO,
+        //        radius: 1.0,
+        //        material: sphere_material.clone(),
+        //    }),
+        //)),
+        Arc::new(Sphere {
+            center: DVec3::new(-0.0, -101.0, -1.0),
+            radius: 100.0,
+            material: ground_material.clone(),
+        }),
+    ];
+
+    let mut test_mesh = load_obj(
+        "F:\\Models\\cube.obj",
+        //"F:\\Models\\JapaneseTemple\\model_triangulated.obj",
+        sphere_material.clone(),
+    )
+    .unwrap();
+
+    let cube = test_mesh.pop().unwrap();
+
+    let bvh_cube = BVHNode::from_mesh(cube, 0.0, 1.0);
+
+    let transformation = DMat4::from_scale(DVec3::new(2.0, 1.0, 1.0))
+        * DMat4::from_rotation_y(0.785398)
+        * DMat4::from_translation(DVec3::new(1.0, 0.0, 0.0));
+
+    let transformed_cube = Transformed::new(transformation, Arc::new(bvh_cube));
+
+    world.push(Arc::new(transformed_cube));
+
+    let aspect_ratio = 16.0 / 9.0;
+    let look_from = DVec3::new(0.0, 0.0, 5.0);
+    let look_at = DVec3::new(0.0, 0.0, 0.0);
+    let up = DVec3::new(0.0, 1.0, 0.0);
+
+    let dist_to_focus = (look_at - look_from).length();
+    let aperture = 0.1;
+
+    let camera = Camera::new(
+        look_from,
+        look_at,
+        up,
+        30.0,
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+        0.0,
+        1.0,
+    );
+
+    return (world, camera, skybox);
+}
 
 #[allow(dead_code)]
 fn create_simple_scene() -> SceneDescription {
@@ -102,11 +288,14 @@ fn create_simple_scene() -> SceneDescription {
     let right_material: Arc<dyn Material> = Arc::new(Metal::new(DVec3::new(0.8, 0.6, 0.2), 1.0));
 
     let world: Vec<Arc<dyn Hittable>> = vec![
-        Arc::new(Sphere {
-            center: DVec3::new(0.0, 0.0, -1.0),
-            radius: 0.5,
-            material: center_material.clone(),
-        }),
+        Arc::new(Transformed::new(
+            DMat4::from_scale(DVec3::splat(1.4)),
+            Arc::new(Sphere {
+                center: DVec3::new(0.0, 0.0, -1.0),
+                radius: 0.5,
+                material: center_material.clone(),
+            }),
+        )),
         Arc::new(Sphere {
             center: DVec3::new(-1.0, 0.0, -1.0),
             radius: 0.5,
@@ -484,7 +673,12 @@ fn mesh_scene() -> SceneDescription {
     let mut world: Vec<Arc<dyn Hittable>> = Vec::new();
     test_mesh.into_iter().for_each(|mesh| {
         mesh.into_iter()
-            .map(|triangle| Arc::new(triangle) as Arc<dyn Hittable>)
+            .map(|triangle| {
+                Arc::new(Transformed::new(
+                    DMat4::from_translation(DVec3::splat(5.0)),
+                    Arc::new(triangle),
+                )) as Arc<dyn Hittable>
+            })
             .for_each(|triangle| world.push(triangle))
     });
 
@@ -578,9 +772,11 @@ fn main() {
     let height = (width as f64 / aspect_ratio) as u32;
 
     //let (world, camera, background_colour) = simple_triangle_scene();
-    let (world, camera, background_colour) = mesh_scene();
+    //let (world, camera, background_colour) = mesh_scene();
     //let (world, camera, background_colour) = create_random_scene();
     //let (world, camera, background_colour) = create_simple_scene();
+    //let (world, camera, background_colour) = create_sphere_scene();
+    let (world, camera, background_colour) = create_cornell_scene();
     //let (world, camera, background_colour) = two_spheres();
     //let (world, camera, background_colour) = simple_light();
 
@@ -588,7 +784,7 @@ fn main() {
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
     println!("Done!");
 
-    let samples_per_pixel = 5;
+    let samples_per_pixel = 100;
     let max_depth = 50;
     println!(
         "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",

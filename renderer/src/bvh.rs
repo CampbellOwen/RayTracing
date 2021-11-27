@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, sync::Arc};
 
-use super::{HitRecord, Hittable, AABB};
+use super::{HitRecord, Hittable, Triangle, AABB};
 use rand::{self, Rng};
 
 pub struct BVHNode {
@@ -10,6 +10,15 @@ pub struct BVHNode {
 }
 
 impl BVHNode {
+    pub fn from_mesh(triangles: Vec<Triangle>, time_0: f64, time_1: f64) -> BVHNode {
+        let hittables = triangles
+            .into_iter()
+            .map(|triangle| Arc::new(triangle) as Arc<dyn Hittable>)
+            .collect::<Vec<Arc<dyn Hittable>>>();
+
+        BVHNode::new(&hittables.as_slice(), time_0, time_1)
+    }
+
     pub fn new(hittables: &[Arc<dyn Hittable>], time_0: f64, time_1: f64) -> BVHNode {
         if hittables.len() == 1 {
             return BVHNode {

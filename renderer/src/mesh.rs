@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use crate::{bounding_box::AABB, hit::HitRecord, hittable::Hittable, material::Material, ray::Ray};
+use crate::{
+    bounding_box::AABB, hit::HitRecord, hittable::Hittable, material::Material, ray::Ray, BVHNode,
+    Transformable,
+};
 
 use glam::{DVec2, DVec3};
 
@@ -117,6 +120,39 @@ impl Hittable for Triangle {
             );
 
         Some(AABB { min, max })
+    }
+}
+
+impl Hittable for Vec<Triangle> {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        self.iter().fold(None, |hr, object| {
+            if let Some(prev_hit) = &hr {
+                match object.hit(ray, t_min, prev_hit.t) {
+                    Some(new_hit) => Some(new_hit),
+                    None => hr,
+                }
+            } else {
+                object.hit(ray, t_min, t_max)
+            }
+        })
+    }
+
+    fn bounding_box(&self, time_0: f64, time_1: f64) -> Option<AABB> {
+        if self.len() <= 0 {
+            return None;
+        }
+
+        let first_box = self[0].bounding_box(time_0, time_1);
+        if first_box.is_none() {
+            return None;
+        }
+
+        self.iter().skip(1).fold(first_box, |bbox, hittable| {
+            return Some(AABB::surrounding_box(
+                &bbox?,
+                &hittable.bounding_box(time_0, time_1)?,
+            ));
+        })
     }
 }
 
