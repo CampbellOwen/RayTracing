@@ -57,7 +57,15 @@ impl Hittable for Transformed {
     }
 
     fn bounding_box(&self, time_0: f64, time_1: f64) -> Option<AABB> {
-        self.hittable.bounding_box(time_0, time_1)
+        let bb = self.hittable.bounding_box(time_0, time_1)?;
+
+        let max4 = DVec4::from((bb.max, 1.0));
+        let min4 = DVec4::from((bb.min, 1.0));
+
+        let max = (self.t * max4).xyz();
+        let min = (self.t * min4).xyz();
+
+        Some(AABB { max, min })
     }
 }
 
