@@ -13,4 +13,5 @@ rand = "0.8.4"
 rand_pcg = "0.3.1"
 rayon = "1.5.1"
 obj = "0.10.2"
+ctrlc = "3.2.1"
 renderer = { path = "../renderer" }

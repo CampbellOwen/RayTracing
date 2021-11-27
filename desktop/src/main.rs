@@ -15,6 +15,7 @@ use glam::{DMat4, DVec3};
 use rayon::prelude::*;
 
 use core::num;
+use std::process::exit;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -495,7 +496,7 @@ fn mesh_scene() -> SceneDescription {
     });
 
     world.push(Arc::new(Sphere {
-        center: DVec3::new(40.0, 40.0, 20.0),
+        center: DVec3::new(40.0, 40.0, -20.0),
         radius: 25.0,
         material: Arc::new(DiffuseLight {
             emit_colour: Arc::new(SolidColour {
@@ -505,7 +506,7 @@ fn mesh_scene() -> SceneDescription {
     }));
 
     world.push(Arc::new(Sphere {
-        center: DVec3::new(-40.0, 40.0, 20.0),
+        center: DVec3::new(-40.0, 40.0, -20.0),
         radius: 25.0,
         material: Arc::new(DiffuseLight {
             emit_colour: Arc::new(SolidColour {
@@ -572,7 +573,7 @@ fn aces_tonemapping(pixel: DVec3) -> DVec3 {
 }
 
 fn main() {
-    let width = 500;
+    let width = 800;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
@@ -600,7 +601,15 @@ fn main() {
         (height + tile_size - 1) / (tile_size),
     );
 
-    let img = Mutex::new(Image::new((width, height)));
+    let img = Arc::new(Mutex::new(Image::new((width, height))));
+
+    let img_clone = img.clone();
+
+    ctrlc::set_handler(move || {
+        write_image(&img_clone.lock().unwrap(), "output.ppm").expect("Writing image failed");
+        exit(0);
+    })
+    .expect("Setting handler failed");
 
     (0..(num_tiles.0 * num_tiles.1))
         .into_par_iter()
