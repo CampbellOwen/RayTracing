@@ -5,7 +5,7 @@ Thanks [@Peter_Shirley](https://twitter.com/Peter_shirley) for the awesome serie
 ![Raytraced spheres](img/output.png)
 
 ### OBJ Mesh Rendering
-![Image of pagoda](img/good_pagoda.png)
+![Image of pagoda](img/1000sppPagodaLight.png)
 
 ### Multithreaded Tiled Rendering
 - Splits image into 16x16 tiles and renders them in parallel
