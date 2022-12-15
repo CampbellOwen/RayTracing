@@ -31,9 +31,7 @@ impl AABB {
             let mut t1 = (self.max[a] - ray.origin[a]) * inv_d;
 
             if t1 < t0 {
-                let temp = t0;
-                t0 = t1;
-                t1 = temp;
+                std::mem::swap(&mut t0, &mut t1);
             }
 
             let t_min = if t0 > t_min { t0 } else { t_min };

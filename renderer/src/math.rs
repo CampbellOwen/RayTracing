@@ -26,11 +26,11 @@ pub fn reflect(a: DVec3, b: DVec3) -> DVec3 {
     a - (b * a.dot(b) * 2.0)
 }
 pub fn near_zero(v: DVec3) -> bool {
-    let s = 1e-8;
+    let epsilon = 1e-8;
 
     let v_abs = v.abs();
 
-    return (v_abs.x < s) && (v_abs.y < s) && (v_abs.z < s);
+    (v_abs.x < epsilon) && (v_abs.y < epsilon) && (v_abs.z < epsilon)
 }
 
 pub fn refract(v: DVec3, n: DVec3, etai_over_etat: f64) -> DVec3 {

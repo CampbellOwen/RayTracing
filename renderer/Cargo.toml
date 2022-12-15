@@ -9,3 +9,6 @@ edition = "2018"
 [dependencies]
 rand = "0.8.4"
 glam = "0.17.3"
+
+[profile.release]
+debug = true

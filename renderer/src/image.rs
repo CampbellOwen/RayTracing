@@ -1,3 +1,5 @@
+use std::f64::EPSILON;
+
 use crate::Texture;
 
 use glam::DVec3;
@@ -27,7 +29,7 @@ impl Image {
     pub fn new(size: (u32, u32)) -> Image {
         let capacity: usize = size.0 as usize * size.1 as usize;
         Image {
-            size: size,
+            size,
             data: vec![DVec3::ZERO; capacity],
         }
     }
@@ -35,20 +37,21 @@ impl Image {
     pub fn get(&self, x: u32, y: u32) -> Option<&DVec3> {
         let index: usize = (y * self.size.0) as usize + x as usize;
 
-        return self.data.get(index);
+        self.data.get(index)
     }
 
     pub fn put(&mut self, x: u32, y: u32, colour: &DVec3) {
         let index: usize = (y * self.size.0) as usize + x as usize;
 
-        let mut colour = colour.clone();
-        if colour.x != colour.x {
+        let mut colour = *colour;
+
+        if colour.x.abs() < EPSILON {
             colour.x = 0.0;
         }
-        if colour.y != colour.y {
+        if colour.y.abs() < EPSILON {
             colour.y = 0.0;
         }
-        if colour.z != colour.z {
+        if colour.z.abs() < EPSILON {
             colour.z = 0.0;
         }
 

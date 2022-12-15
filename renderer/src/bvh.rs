@@ -16,7 +16,7 @@ impl BVHNode {
             .map(|triangle| Arc::new(triangle) as Arc<dyn Hittable>)
             .collect::<Vec<Arc<dyn Hittable>>>();
 
-        BVHNode::new(&hittables.as_slice(), time_0, time_1)
+        BVHNode::new(hittables.as_slice(), time_0, time_1)
     }
 
     pub fn new(hittables: &[Arc<dyn Hittable>], time_0: f64, time_1: f64) -> BVHNode {
@@ -53,9 +53,9 @@ impl BVHNode {
             let bbox1 = bbox1.unwrap();
             let bbox2 = bbox2.unwrap();
 
-            return bbox1.min[sort_axis]
+            bbox1.min[sort_axis]
                 .partial_cmp(&bbox2.min[sort_axis])
-                .unwrap_or(Ordering::Less);
+                .unwrap_or(Ordering::Less)
         });
 
         let midpoint = objects.len() / 2;
@@ -88,7 +88,7 @@ impl Hittable for BVHNode {
 
         let right_hit = self.right.hit(ray, t_min, t_max);
 
-        return right_hit.or(left_hit);
+        right_hit.or(left_hit)
     }
 
     fn bounding_box(&self, _: f64, _: f64) -> Option<AABB> {

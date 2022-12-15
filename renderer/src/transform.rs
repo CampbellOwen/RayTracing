@@ -15,7 +15,7 @@ impl Transformed {
         Transformed {
             t: transformation,
             t_inv: transformation.inverse(),
-            hittable: hittable,
+            hittable,
         }
     }
 }
@@ -33,15 +33,9 @@ impl Hittable for Transformed {
 
         let inverse_transpose = self.t_inv.transpose();
 
-        match self.hittable.hit(&transformed, t_min, t_max) {
-            Some(hr) => Some(HitRecord {
-                //pub point: DVec3,
-                //pub normal: DVec3,
-                //pub material: &'material Arc<dyn Material>,
-                //pub t: f64,
-                //pub u: f64,
-                //pub v: f64,
-                //pub front_face: bool,
+        self.hittable
+            .hit(&transformed, t_min, t_max)
+            .map(|hr| HitRecord {
                 point: ray.at(hr.t),
                 normal: (inverse_transpose * DVec4::from((hr.normal, 0.0)))
                     .xyz()
@@ -51,9 +45,7 @@ impl Hittable for Transformed {
                 u: hr.u,
                 v: hr.v,
                 front_face: hr.front_face,
-            }),
-            None => None,
-        }
+            })
     }
 
     fn bounding_box(&self, time_0: f64, time_1: f64) -> Option<AABB> {

@@ -71,16 +71,17 @@ impl Material for Metal {
         let mut rng = rand::thread_rng();
 
         if reflected.dot(hit_record.normal) > 0.0 {
-            return Some((
+            Some((
                 Ray {
                     origin: hit_record.point,
                     dir: reflected + (rand_in_unit_sphere(&mut rng) * self.fuzz),
                     time: ray.time,
                 },
                 self.albedo,
-            ));
+            ))
+        } else {
+            None
         }
-        return None;
     }
 }
 

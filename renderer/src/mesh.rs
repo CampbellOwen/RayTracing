@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use crate::{
-    bounding_box::AABB, hit::HitRecord, hittable::Hittable, material::Material, ray::Ray, BVHNode,
-    Transformable,
-};
+use crate::{bounding_box::AABB, hit::HitRecord, hittable::Hittable, material::Material, ray::Ray};
 
 use glam::{DVec2, DVec3};
 
@@ -33,7 +30,7 @@ pub fn create_mesh(
 
     for indices in indices {
         triangles.push(Triangle {
-            indices: indices,
+            indices,
             data: mesh.clone(),
         });
     }
@@ -68,7 +65,7 @@ impl Hittable for Triangle {
 
         let u = det_inv * s.dot(h);
 
-        if u < 0.0 || u > 1.0 {
+        if !(0.0..=1.0).contains(&u) {
             return None;
         }
 
@@ -138,20 +135,18 @@ impl Hittable for Vec<Triangle> {
     }
 
     fn bounding_box(&self, time_0: f64, time_1: f64) -> Option<AABB> {
-        if self.len() <= 0 {
+        if self.is_empty() {
             return None;
         }
 
         let first_box = self[0].bounding_box(time_0, time_1);
-        if first_box.is_none() {
-            return None;
-        }
+        first_box.as_ref()?;
 
         self.iter().skip(1).fold(first_box, |bbox, hittable| {
-            return Some(AABB::surrounding_box(
+            Some(AABB::surrounding_box(
                 &bbox?,
                 &hittable.bounding_box(time_0, time_1)?,
-            ));
+            ))
         })
     }
 }

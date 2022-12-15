@@ -27,7 +27,7 @@ impl<'material> HitRecord<'material> {
     ) -> HitRecord<'material> {
         let mut hr = HitRecord {
             point: *point,
-            normal: normal,
+            normal,
             material,
             t,
             u,
@@ -35,7 +35,7 @@ impl<'material> HitRecord<'material> {
             front_face: true,
         };
         hr.set_face_normal(ray, normal);
-        return hr;
+        hr
     }
     fn set_face_normal(&mut self, ray: &Ray, outward_normal: DVec3) {
         self.front_face = DVec3::dot(ray.dir, outward_normal) < 0.0;

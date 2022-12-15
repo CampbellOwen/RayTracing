@@ -19,6 +19,7 @@ use core::num;
 use std::process::exit;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::Instant;
 
 use importers::obj::load_obj;
 mod importers;
@@ -89,8 +90,6 @@ fn create_cornell_scene() -> SceneDescription {
             DVec3::new(0.9, 0.9, 0.9),
         )),
     });
-
-    let sphere_material = Arc::new(Metal::new(DVec3::new(0.8, 0.6, 0.2), 0.2));
 
     let mut world: Vec<Arc<dyn Hittable>> = vec![
         //Arc::new(Transformed::new(
@@ -177,6 +176,10 @@ fn create_cornell_scene() -> SceneDescription {
         * DMat4::from_scale(DVec3::new(1.5, 0.1, 2.0));
     let ceiling = Transformed::new(ceiling_transform, grey_cube.clone());
     world.push(Arc::new(ceiling));
+
+    let left_box_transform = DMat4::from_translation(DVec3::new(0.0, 0.0, 0.0));
+    let left_box = Transformed::new(left_box_transform, grey_cube.clone());
+    world.push(Arc::new(left_box));
 
     let aspect_ratio = 16.0 / 9.0;
     let look_from = DVec3::new(0.0, 0.0, 5.0);
@@ -690,7 +693,7 @@ fn mesh_scene() -> SceneDescription {
     });
 
     world.push(Arc::new(Sphere {
-        center: DVec3::new(40.0, 40.0, -20.0),
+        center: DVec3::new(40.0, 40.0, 20.0),
         radius: 25.0,
         material: Arc::new(DiffuseLight {
             emit_colour: Arc::new(SolidColour {
@@ -699,21 +702,21 @@ fn mesh_scene() -> SceneDescription {
         }),
     }));
 
-    world.push(Arc::new(Sphere {
-        center: DVec3::new(-40.0, 40.0, -20.0),
-        radius: 25.0,
-        material: Arc::new(DiffuseLight {
-            emit_colour: Arc::new(SolidColour {
-                colour: DVec3::new(4.0, 4.0, 4.0),
-            }),
-        }),
-    }));
+    //world.push(Arc::new(Sphere {
+    //    center: DVec3::new(-40.0, 40.0, -20.0),
+    //    radius: 25.0,
+    //    material: Arc::new(DiffuseLight {
+    //        emit_colour: Arc::new(SolidColour {
+    //            colour: DVec3::new(4.0, 4.0, 4.0),
+    //        }),
+    //    }),
+    //}));
 
-    world.push(Arc::new(Sphere {
-        center: DVec3::new(0.0, -1000.0, 0.0),
-        radius: 1000.0,
-        material: ground_material,
-    }));
+    //world.push(Arc::new(Sphere {
+    //    center: DVec3::new(0.0, -1000.0, 0.0),
+    //    radius: 1000.0,
+    //    material: ground_material,
+    //}));
 
     let look_from = DVec3::new(-2.0, 30.0, 30.0);
     let look_at = DVec3::new(0.0, 15.0, 0.0);
@@ -767,16 +770,16 @@ fn aces_tonemapping(pixel: DVec3) -> DVec3 {
 }
 
 fn main() {
-    let width = 800;
+    let width = 100;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
     //let (world, camera, background_colour) = simple_triangle_scene();
-    //let (world, camera, background_colour) = mesh_scene();
+    let (world, camera, background_colour) = mesh_scene();
     //let (world, camera, background_colour) = create_random_scene();
     //let (world, camera, background_colour) = create_simple_scene();
     //let (world, camera, background_colour) = create_sphere_scene();
-    let (world, camera, background_colour) = create_cornell_scene();
+    //let (world, camera, background_colour) = create_cornell_scene();
     //let (world, camera, background_colour) = two_spheres();
     //let (world, camera, background_colour) = simple_light();
 
@@ -784,8 +787,8 @@ fn main() {
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
     println!("Done!");
 
-    let samples_per_pixel = 100;
-    let max_depth = 50;
+    let samples_per_pixel = 10;
+    let max_depth = 10;
     println!(
         "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",
         samples_per_pixel, max_depth, width, height
@@ -795,6 +798,11 @@ fn main() {
     let num_tiles = (
         (width + tile_size - 1) / (tile_size),
         (height + tile_size - 1) / (tile_size),
+    );
+
+    println!(
+        "Breaking image into {}x{} tiles of size {}",
+        num_tiles.0, num_tiles.1, tile_size
     );
 
     let img = Arc::new(Mutex::new(Image::new((width, height))));
@@ -807,16 +815,19 @@ fn main() {
     })
     .expect("Setting handler failed");
 
+    let render_start_time = Instant::now();
+
     (0..(num_tiles.0 * num_tiles.1))
         .into_par_iter()
+        //.into_iter()
         .for_each(|tile_index| {
             let tile_xy = (tile_index % num_tiles.0, tile_index / num_tiles.0);
             let tile_origin = (tile_xy.0 * tile_size, tile_xy.1 * tile_size);
 
-            let locked_img = img.lock().unwrap();
-            let mut tile = locked_img.get_tile(tile_origin, (tile_size, tile_size));
-
-            std::mem::drop(locked_img);
+            let mut tile = {
+                let locked_img = img.lock().unwrap();
+                locked_img.get_tile(tile_origin, (tile_size, tile_size))
+            };
 
             let mut rng = rand::thread_rng();
             for index in 0..(tile.size.0 * tile.size.1) {
@@ -847,8 +858,13 @@ fn main() {
 
             let mut locked_img = img.lock().unwrap();
             locked_img.merge_tile(tile);
-            println!("Finished rendering tile {}", tile_index);
+            //println!("Finished rendering tile {}", tile_index);
         });
+
+    let render_end_time = Instant::now();
+    let render_time = render_end_time - render_start_time;
+
+    println!("Rendering complete in {:?}", render_time);
 
     println!("\nSaving image");
     let locked_image = img.lock().unwrap();

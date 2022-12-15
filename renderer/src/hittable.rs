@@ -21,20 +21,18 @@ impl Hittable for &[Arc<dyn Hittable>] {
         })
     }
     fn bounding_box(&self, time_0: f64, time_1: f64) -> Option<AABB> {
-        if self.len() <= 0 {
+        if self.is_empty() {
             return None;
         }
 
         let first_box = self[0].bounding_box(time_0, time_1);
-        if first_box.is_none() {
-            return None;
-        }
+        first_box.as_ref()?;
 
         self.iter().skip(1).fold(first_box, |bbox, hittable| {
-            return Some(AABB::surrounding_box(
+            Some(AABB::surrounding_box(
                 &bbox?,
                 &hittable.bounding_box(time_0, time_1)?,
-            ));
+            ))
         })
     }
 }
@@ -55,7 +53,7 @@ mod tests {
         let world: Vec<Arc<dyn Hittable>> = vec![Arc::new(Sphere {
             center: DVec3::new(0.0, 0.0, 0.0),
             radius: 0.5,
-            material: material.clone(),
+            material,
         })];
 
         let bbox = world.as_slice().bounding_box(0.0, 0.0);
@@ -85,7 +83,7 @@ mod tests {
             Arc::new(Sphere {
                 center: DVec3::new(0.0, 0.0, 0.0),
                 radius: 0.2,
-                material: material.clone(),
+                material,
             }),
         ];
 
@@ -116,7 +114,7 @@ mod tests {
             Arc::new(Sphere {
                 center: DVec3::new(0.5, 0.5, 0.5),
                 radius: 0.5,
-                material: material.clone(),
+                material,
             }),
         ];
 
