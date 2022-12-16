@@ -97,7 +97,7 @@ impl Hittable for Triangle {
 
         Some(HitRecord {
             point: ray.at(t),
-            material: &self.data.material,
+            material: self.data.material.as_ref(),
             normal: n,
             u: uv.x,
             v: uv.y,

@@ -97,7 +97,7 @@ fn spherical_hit<'material, T: Spherical>(
     let point = ray.at(t);
     let normal = (point - center) / radius;
     let (u, v) = spherical_uv(&normal);
-    let hr = HitRecord::new(ray, &point, normal, sphere.material(), t, u, v);
+    let hr = HitRecord::new(ray, &point, normal, sphere.material().as_ref(), t, u, v);
 
     Some(hr)
 }
@@ -195,7 +195,7 @@ impl Hittable for AARect {
             ray,
             &ray_hit,
             outward_normal,
-            &self.material,
+            self.material.as_ref(),
             t,
             u,
             v,
