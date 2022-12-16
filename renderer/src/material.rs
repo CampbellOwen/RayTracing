@@ -2,18 +2,20 @@ use std::sync::Arc;
 
 use super::{HitRecord, Ray, SolidColour, Texture};
 use crate::{
+    hit,
     math::{near_zero, rand_in_unit_sphere, rand_unit_vector, reflect, refract},
-    CosineWeightedHemispherePDF, PDF,
+    CosineWeightedHemispherePDF, DielectricFresnelPDF, FuzzyDiracDeltaPDF, PDF,
 };
 use glam::DVec3;
 use rand::Rng;
 
 pub trait Material: std::fmt::Debug + Send + Sync {
     fn scatter(&self, ray: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord>;
-    fn scattering_pdf(&self, ray: &Ray, hit_record: &HitRecord, scattered: &Ray) -> f64;
     fn emitted(&self, _: f64, _: f64, _: DVec3) -> DVec3 {
         DVec3::new(0.0, 0.0, 0.0)
     }
+    fn scattering_pdf(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<Box<dyn PDF>>;
+    fn brdf(&self, ray_in: &Ray, hit_record: &HitRecord, ray_out: &Ray) -> DVec3;
 }
 
 pub struct ScatterRecord {
@@ -31,15 +33,6 @@ impl Lambertian {
     pub fn new(colour: DVec3) -> Lambertian {
         Lambertian {
             albedo: Arc::new(SolidColour { colour }),
-        }
-    }
-
-    fn brdf(&self, _: &Ray, hit_record: &HitRecord, scattered: &Ray) -> f64 {
-        let cosine = hit_record.normal.dot(scattered.dir);
-        if cosine < 0.0 {
-            0.0
-        } else {
-            cosine / std::f64::consts::PI
         }
     }
 }
@@ -75,13 +68,16 @@ impl Material for Lambertian {
         })
     }
 
-    fn scattering_pdf(&self, _: &Ray, hit_record: &HitRecord, scattered: &Ray) -> f64 {
-        let cosine = hit_record.normal.dot(scattered.dir);
-        if cosine < 0.0 {
-            0.0
-        } else {
-            cosine / std::f64::consts::PI
-        }
+    fn scattering_pdf(&self, _: &Ray, hit_record: &HitRecord) -> Option<Box<dyn PDF>> {
+        Some(Box::new(CosineWeightedHemispherePDF::new(
+            hit_record.normal,
+        )))
+    }
+
+    fn brdf(&self, _: &Ray, hit_record: &HitRecord, out_ray: &Ray) -> DVec3 {
+        self.albedo
+            .sample(hit_record.u, hit_record.v, hit_record.point)
+            / std::f64::consts::PI
     }
 }
 
@@ -120,8 +116,15 @@ impl Material for Metal {
         }
     }
 
-    fn scattering_pdf(&self, ray: &Ray, hit_record: &HitRecord, scattered: &Ray) -> f64 {
-        0.0
+    fn brdf(&self, ray_in: &Ray, hit_record: &HitRecord, ray_out: &Ray) -> DVec3 {
+        let cosine = ray_out.dir.dot(hit_record.normal);
+
+        self.albedo / cosine // Divide by cos(theta) because we need to cancel out the cos(theta) from the rendering equation
+    }
+
+    fn scattering_pdf(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<Box<dyn PDF>> {
+        let reflected = reflect(ray_in.dir.normalize(), hit_record.normal);
+        Some(Box::new(FuzzyDiracDeltaPDF::new(reflected, self.fuzz)))
     }
 }
 
@@ -131,7 +134,7 @@ pub struct Dielectric {
 }
 
 /// Schlick's approximation
-fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
+pub fn reflectance(cosine: f64, ref_idx: f64) -> f64 {
     let r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
     let r0 = r0 * r0;
 
@@ -171,8 +174,23 @@ impl Material for Dielectric {
         })
     }
 
-    fn scattering_pdf(&self, ray: &Ray, hit_record: &HitRecord, scattered: &Ray) -> f64 {
-        0.0
+    fn scattering_pdf(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<Box<dyn PDF>> {
+        let ior = if hit_record.front_face {
+            1.0 / self.ior
+        } else {
+            self.ior
+        };
+        Some(Box::new(DielectricFresnelPDF::new(
+            ray_in,
+            hit_record.normal,
+            ior,
+        )))
+    }
+
+    fn brdf(&self, ray_in: &Ray, hit_record: &HitRecord, ray_out: &Ray) -> DVec3 {
+        let cosine = ray_out.dir.dot(hit_record.normal);
+
+        DVec3::ONE / cosine // Divide by cos(theta) because we need to cancel out the cos(theta) from the rendering equation
     }
 }
 
@@ -189,7 +207,11 @@ impl Material for DiffuseLight {
         self.emit_colour.sample(u, v, p)
     }
 
-    fn scattering_pdf(&self, ray: &Ray, hit_record: &HitRecord, scattered: &Ray) -> f64 {
-        0.0
+    fn brdf(&self, ray_in: &Ray, hit_record: &HitRecord, ray_out: &Ray) -> DVec3 {
+        DVec3::ZERO
+    }
+
+    fn scattering_pdf(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<Box<dyn PDF>> {
+        None
     }
 }

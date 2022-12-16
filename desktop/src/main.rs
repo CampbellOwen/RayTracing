@@ -2,6 +2,8 @@ use exporters::ppm::write_image;
 use glam::DVec2;
 use rand::Rng;
 
+use rand::SeedableRng;
+use rand_pcg::Pcg64;
 use renderer::create_mesh;
 use renderer::Integrator;
 use renderer::Transformable;
@@ -366,8 +368,8 @@ fn create_random_scene(motion_blur: bool) -> SceneDescription {
         material: ground_material.clone(),
     }));
 
-    //let mut rng = Pcg64::seed_from_u64(2);
-    let mut rng = rand::thread_rng();
+    let mut rng = Pcg64::seed_from_u64(2);
+    //let mut rng = rand::thread_rng();
 
     for a in -11..11 {
         for b in -11..11 {

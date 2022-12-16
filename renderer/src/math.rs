@@ -1,7 +1,7 @@
 use glam::DVec3;
 use rand::Rng;
 
-pub fn rand_in_range(rng: &mut impl rand::Rng, min: f64, max: f64) -> DVec3 {
+pub fn rand_in_range(rng: &mut dyn rand::RngCore, min: f64, max: f64) -> DVec3 {
     DVec3::new(
         rng.gen_range(min..max),
         rng.gen_range(min..max),
@@ -9,7 +9,7 @@ pub fn rand_in_range(rng: &mut impl rand::Rng, min: f64, max: f64) -> DVec3 {
     )
 }
 
-pub fn rand_in_unit_sphere(rng: &mut impl rand::Rng) -> DVec3 {
+pub fn rand_in_unit_sphere(rng: &mut dyn rand::RngCore) -> DVec3 {
     loop {
         let point = rand_in_range(rng, -1.0, 1.0);
         if point.length() < 1.0 {
@@ -18,7 +18,7 @@ pub fn rand_in_unit_sphere(rng: &mut impl rand::Rng) -> DVec3 {
     }
 }
 
-pub fn rand_unit_vector(rng: &mut impl rand::Rng) -> DVec3 {
+pub fn rand_unit_vector(rng: &mut dyn rand::RngCore) -> DVec3 {
     rand_in_unit_sphere(rng).normalize()
 }
 
