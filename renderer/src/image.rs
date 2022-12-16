@@ -45,13 +45,13 @@ impl Image {
 
         let mut colour = *colour;
 
-        if colour.x.abs() < EPSILON {
+        if colour.x.is_nan() {
             colour.x = 0.0;
         }
-        if colour.y.abs() < EPSILON {
+        if colour.y.is_nan() {
             colour.y = 0.0;
         }
-        if colour.z.abs() < EPSILON {
+        if colour.z.is_nan() {
             colour.z = 0.0;
         }
 

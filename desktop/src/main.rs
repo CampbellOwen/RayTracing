@@ -3,19 +3,19 @@ use glam::DVec2;
 use rand::Rng;
 
 use renderer::create_mesh;
+use renderer::Integrator;
 use renderer::Transformable;
 use renderer::Transformed;
 use renderer::{
-    rand_in_range, random, ray_colour, AARect, BVHNode, Camera, CheckerTexture, Dielectric,
-    DiffuseLight, Hittable, Image, Lambertian, Material, Mesh, Metal, MovingSphere, Ray,
-    SolidColour, Sphere, Triangle,
+    rand_in_range, random, AARect, BVHNode, Camera, CheckerTexture, Dielectric, DiffuseLight,
+    Hittable, Image, Lambertian, Material, Metal, MovingSphere, PathIntegrator, Ray, SolidColour,
+    Sphere,
 };
 
 use glam::{DMat4, DVec3};
 
 use rayon::prelude::*;
 
-use core::num;
 use std::process::exit;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -241,7 +241,7 @@ fn create_sphere_scene() -> SceneDescription {
     let bvh_cube = BVHNode::from_mesh(cube, 0.0, 1.0);
 
     let transformation = DMat4::from_scale(DVec3::new(2.0, 1.0, 1.0))
-        * DMat4::from_rotation_y(0.785398)
+        * DMat4::from_rotation_y(std::f64::consts::FRAC_PI_4)
         * DMat4::from_translation(DVec3::new(1.0, 0.0, 0.0));
 
     let transformed_cube = Transformed::new(transformation, Arc::new(bvh_cube));
@@ -356,7 +356,7 @@ fn create_simple_scene() -> SceneDescription {
 }
 
 #[allow(dead_code)]
-fn create_random_scene() -> SceneDescription {
+fn create_random_scene(motion_blur: bool) -> SceneDescription {
     let mut world: Vec<Arc<dyn Hittable>> = Vec::new();
     let ground_material = Arc::new(Lambertian::new(DVec3::new(0.5, 0.5, 0.5)));
 
@@ -455,7 +455,7 @@ fn create_random_scene() -> SceneDescription {
         aperture,
         dist_to_focus,
         0.0,
-        1.0,
+        if motion_blur { 1.0 } else { 0.0 },
     );
 
     return (world, camera, skybox);
@@ -477,7 +477,7 @@ fn two_spheres() -> SceneDescription {
     let aspect_ratio = 16.0 / 9.0;
     let aperture = 0.1;
     let focus_dist = (look_from - look_at).length();
-    return (
+    (
         vec![
             Arc::new(Sphere {
                 center: DVec3::new(0.0, -10.0, 0.0),
@@ -487,7 +487,7 @@ fn two_spheres() -> SceneDescription {
             Arc::new(Sphere {
                 center: DVec3::new(0.0, 10.0, 0.0),
                 radius: 10.0,
-                material: material.clone(),
+                material,
             }),
             Arc::new(Sphere {
                 center: DVec3::new(10.0, 2.0, 0.5),
@@ -509,7 +509,7 @@ fn two_spheres() -> SceneDescription {
             focus_dist,
         ),
         no_light,
-    );
+    )
 }
 
 fn simple_triangle_scene() -> SceneDescription {
@@ -733,7 +733,7 @@ fn mesh_scene() -> SceneDescription {
         (look_at - look_from).length(),
     );
 
-    return (world, camera, no_light);
+    (world, camera, no_light)
 }
 
 fn load_texture(filename: &str) -> Option<Image> {
@@ -765,34 +765,35 @@ fn aces_tonemapping(pixel: DVec3) -> DVec3 {
     let d = 0.59;
     let e = 0.14;
 
-    return ((pixel * (a * pixel + b)) / (pixel * (c * pixel + d) + e))
-        .clamp(DVec3::ZERO, DVec3::ONE);
+    ((pixel * (a * pixel + b)) / (pixel * (c * pixel + d) + e)).clamp(DVec3::ZERO, DVec3::ONE)
 }
 
 fn main() {
-    let width = 100;
+    let width = 800;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
     //let (world, camera, background_colour) = simple_triangle_scene();
-    let (world, camera, background_colour) = mesh_scene();
-    //let (world, camera, background_colour) = create_random_scene();
+    //let (world, camera, background_colour) = mesh_scene();
+    let (world, camera, background_colour) = create_random_scene(false);
     //let (world, camera, background_colour) = create_simple_scene();
     //let (world, camera, background_colour) = create_sphere_scene();
     //let (world, camera, background_colour) = create_cornell_scene();
     //let (world, camera, background_colour) = two_spheres();
     //let (world, camera, background_colour) = simple_light();
 
-    println!("Building BVH for scene with {} triangles", world.len());
+    println!("Building BVH for scene with {} objects", world.len());
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
     println!("Done!");
 
-    let samples_per_pixel = 10;
-    let max_depth = 10;
+    let samples_per_pixel = 100;
+    let max_depth = 50;
     println!(
         "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",
         samples_per_pixel, max_depth, width, height
     );
+
+    let integrator = PathIntegrator {};
 
     let tile_size = 16;
     let num_tiles = (
@@ -839,17 +840,16 @@ fn main() {
                     let v = (y as f64 + rng.gen::<f64>()) / (height - 1) as f64;
 
                     let ray = camera.get_ray(u, v);
-                    colour = colour
-                        + ray_colour(
-                            ray,
-                            &background_colour,
-                            //&world.as_slice(),
-                            &bvh,
-                            max_depth,
-                        );
+                    colour += integrator.ray_colour(
+                        ray,
+                        &background_colour,
+                        //&world.as_slice(),
+                        &bvh,
+                        max_depth,
+                    );
                 }
 
-                colour = colour / (samples_per_pixel as f64);
+                colour /= (samples_per_pixel as f64);
 
                 colour = aces_tonemapping(colour);
 
@@ -866,7 +866,6 @@ fn main() {
 
     println!("Rendering complete in {:?}", render_time);
 
-    println!("\nSaving image");
     let locked_image = img.lock().unwrap();
     write_image(&locked_image, "output.ppm").expect("Writing image failed");
 }
