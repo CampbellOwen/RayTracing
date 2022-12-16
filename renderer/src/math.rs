@@ -54,8 +54,6 @@ pub fn refract(v: DVec3, n: DVec3, etai_over_etat: f64) -> DVec3 {
     r_out_perp + r_out_parallel
 }
 
-pub fn random() -> DVec3 {
-    let mut rng = rand::thread_rng();
-
+pub fn random(rng: &mut dyn rand::RngCore) -> DVec3 {
     DVec3::new(rng.gen(), rng.gen(), rng.gen())
 }
