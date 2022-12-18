@@ -6,6 +6,7 @@ use rand::SeedableRng;
 use rand_pcg::Pcg64;
 use renderer::create_mesh;
 use renderer::Integrator;
+use renderer::Scene;
 use renderer::Transformable;
 use renderer::Transformed;
 use renderer::{
@@ -368,7 +369,7 @@ fn create_random_scene(motion_blur: bool) -> SceneDescription {
         material: ground_material.clone(),
     }));
 
-    let mut rng = Pcg64::seed_from_u64(2);
+    let mut rng = Pcg64::seed_from_u64(10);
     //let mut rng = rand::thread_rng();
 
     for a in -11..11 {
@@ -441,7 +442,7 @@ fn create_random_scene(motion_blur: bool) -> SceneDescription {
     }));
 
     let aspect_ratio = 16.0 / 9.0;
-    let look_from = DVec3::new(13.0, 2.0, 3.0);
+    let look_from = DVec3::new(8.0, 2.0, 10.0);
     let look_at = DVec3::new(0.0, 0.0, 0.0);
     let up = DVec3::new(0.0, 1.0, 0.0);
 
@@ -784,11 +785,18 @@ fn main() {
     //let (world, camera, background_colour) = two_spheres();
     //let (world, camera, background_colour) = simple_light();
 
-    println!("Building BVH for scene with {} objects", world.len());
-    let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
-    println!("Done!");
+    //println!("Building BVH for scene with {} objects", world.len());
+    //let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
+    //println!("Done!");
 
-    let samples_per_pixel = 500;
+    let scene = Scene::build()
+        .objects(world)
+        .camera(camera)
+        .background(background_colour)
+        .build_bvh()
+        .build();
+
+    let samples_per_pixel = 5;
     let max_depth = 50;
     println!(
         "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",
@@ -841,12 +849,12 @@ fn main() {
                     let u = (x as f64 + rng.gen::<f64>()) / (width - 1) as f64;
                     let v = (y as f64 + rng.gen::<f64>()) / (height - 1) as f64;
 
-                    let ray = camera.get_ray(u, v);
+                    let ray = scene.camera.get_ray(u, v);
                     colour += integrator.ray_colour(
-                        ray,
-                        &background_colour,
+                        ray, &scene,
+                        //&background_colour,
                         //&world.as_slice(),
-                        &bvh,
+                        //&bvh,
                         max_depth,
                     );
                 }

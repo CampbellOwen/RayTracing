@@ -5,6 +5,7 @@ use crate::math::rand_in_unit_sphere;
 use super::Ray;
 use glam::DVec3;
 
+#[derive(Clone, Default)]
 pub struct Camera {
     origin: DVec3,
     lower_left_corner: DVec3,

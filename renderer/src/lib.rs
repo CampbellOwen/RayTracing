@@ -51,6 +51,9 @@ pub use pdf::*;
 mod onb;
 pub use onb::*;
 
+mod scene;
+pub use scene::*;
+
 #[cfg(test)]
 mod tests {
     #[test]

@@ -7,6 +7,48 @@ pub trait Hittable: Sync + Send {
     fn bounding_box(&self, time_0: f64, time_1: f64) -> Option<AABB>;
 }
 
+pub struct NullHittable {}
+impl Hittable for NullHittable {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        None
+    }
+
+    fn bounding_box(&self, time_0: f64, time_1: f64) -> Option<AABB> {
+        None
+    }
+}
+
+impl Hittable for Vec<Arc<dyn Hittable>> {
+    fn hit<'a>(&'a self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        self.iter().fold(None, |hr, object| {
+            if let Some(prev_hit) = &hr {
+                match object.hit(ray, t_min, prev_hit.t) {
+                    Some(new_hit) => Some(new_hit),
+                    None => hr,
+                }
+            } else {
+                object.hit(ray, t_min, t_max)
+            }
+        })
+    }
+
+    fn bounding_box(&self, time_0: f64, time_1: f64) -> Option<AABB> {
+        if self.is_empty() {
+            return None;
+        }
+
+        let first_box = self[0].bounding_box(time_0, time_1);
+        first_box.as_ref()?;
+
+        self.iter().skip(1).fold(first_box, |bbox, hittable| {
+            Some(AABB::surrounding_box(
+                &bbox?,
+                &hittable.bounding_box(time_0, time_1)?,
+            ))
+        })
+    }
+}
+
 impl Hittable for &[Arc<dyn Hittable>] {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         self.iter().fold(None, |hr, object| {

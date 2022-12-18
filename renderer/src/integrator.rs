@@ -1,15 +1,9 @@
 use glam::DVec3;
 
-use crate::{Hittable, Ray, UniformHemispherePDF};
+use crate::{Hittable, Ray, Scene, UniformHemispherePDF};
 
 pub trait Integrator {
-    fn ray_colour(
-        &self,
-        ray: Ray,
-        background_colour: &fn(Ray) -> DVec3,
-        world: &dyn Hittable,
-        depth: i32,
-    ) -> DVec3;
+    fn ray_colour(&self, ray: Ray, scene: &Scene, depth: i32) -> DVec3;
 }
 
 pub struct PathIntegrator {}
@@ -18,8 +12,9 @@ impl Integrator for PathIntegrator {
     fn ray_colour(
         &self,
         ray: Ray,
-        background_colour: &fn(Ray) -> DVec3,
-        world: &dyn Hittable,
+        scene: &Scene,
+        //background_colour: &fn(Ray) -> DVec3,
+        //world: &dyn Hittable,
         depth: i32,
     ) -> DVec3 {
         if depth <= 0 {
@@ -27,7 +22,7 @@ impl Integrator for PathIntegrator {
         }
         let mut rng = rand::thread_rng();
 
-        if let Some(hr) = world.hit(&ray, 0.001, 100000.0) {
+        if let Some(hr) = scene.hit(&ray, 0.001, 100000.0) {
             let emitted = hr.material.emitted(hr.u, hr.v, hr.point);
 
             if let Some(material_pdf) = hr.material.scattering_pdf(&ray, &hr) {
@@ -54,11 +49,7 @@ impl Integrator for PathIntegrator {
                 };
                 let brdf = hr.material.brdf(&ray, &hr, &ray_out);
 
-                emitted
-                    + (brdf
-                        * cos_theta
-                        * self.ray_colour(ray_out, background_colour, world, depth - 1))
-                        / pdf
+                emitted + (brdf * cos_theta * self.ray_colour(ray_out, scene, depth - 1)) / pdf
             } else {
                 emitted
             }
@@ -91,7 +82,7 @@ impl Integrator for PathIntegrator {
             //    emitted
             //}
         } else {
-            background_colour(ray)
+            (scene.background)(ray)
         }
     }
 }

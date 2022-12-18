@@ -1,7 +1,7 @@
 use super::Ray;
 use glam::DVec3;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct AABB {
     pub min: DVec3,
     pub max: DVec3,

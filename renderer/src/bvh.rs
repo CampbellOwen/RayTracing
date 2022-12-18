@@ -1,12 +1,25 @@
 use std::{cmp::Ordering, sync::Arc};
 
+use crate::hittable::NullHittable;
+
 use super::{HitRecord, Hittable, Triangle, AABB};
 use rand::{self, Rng};
 
+#[derive(Clone)]
 pub struct BVHNode {
     left: Arc<dyn Hittable>,
     right: Arc<dyn Hittable>,
     bbox: AABB,
+}
+
+impl Default for BVHNode {
+    fn default() -> Self {
+        Self {
+            left: Arc::new(NullHittable {}),
+            right: Arc::new(NullHittable {}),
+            bbox: Default::default(),
+        }
+    }
 }
 
 impl BVHNode {
