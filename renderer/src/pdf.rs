@@ -2,13 +2,16 @@ use glam::DVec3;
 use rand::Rng;
 
 use crate::{
-    material::reflectance, rand_cosine_hemisphere, rand_in_unit_sphere, reflect, refract,
-    OrthoNormalBasis, Ray,
+    material::reflectance, rand_cosine_hemisphere, rand_hemisphere, rand_in_unit_sphere, reflect,
+    refract, OrthoNormalBasis, Ray,
 };
 
 pub trait PDF {
-    fn value(&self, direction: DVec3) -> Option<f64>;
+    fn value(&self, direction: DVec3) -> f64;
     fn generate(&self, rng: &mut dyn rand::RngCore) -> DVec3;
+    fn is_delta_distribution(&self) -> bool {
+        false
+    }
 }
 
 pub struct CosineWeightedHemispherePDF {
@@ -24,18 +27,40 @@ impl CosineWeightedHemispherePDF {
 }
 
 impl PDF for CosineWeightedHemispherePDF {
-    fn value(&self, direction: DVec3) -> Option<f64> {
+    fn value(&self, direction: DVec3) -> f64 {
         let cosine = direction.normalize().dot(self.basis.w);
 
         if cosine <= 0.0 {
-            Some(0.0)
+            0.0
         } else {
-            Some(cosine / std::f64::consts::PI)
+            cosine / std::f64::consts::PI
         }
     }
 
     fn generate(&self, rng: &mut dyn rand::RngCore) -> DVec3 {
         self.basis.local(&rand_cosine_hemisphere(rng)).normalize()
+    }
+}
+
+pub struct UniformHemispherePDF {
+    basis: OrthoNormalBasis,
+}
+
+impl UniformHemispherePDF {
+    pub fn new(normal: DVec3) -> Self {
+        Self {
+            basis: OrthoNormalBasis::from_w(&normal),
+        }
+    }
+}
+
+impl PDF for UniformHemispherePDF {
+    fn value(&self, direction: DVec3) -> f64 {
+        0.5 * std::f64::consts::FRAC_1_PI
+    }
+
+    fn generate(&self, rng: &mut dyn rand::RngCore) -> DVec3 {
+        self.basis.local(&rand_hemisphere(rng)).normalize()
     }
 }
 
@@ -52,13 +77,15 @@ impl DiracDeltaPDF {
 }
 
 impl PDF for DiracDeltaPDF {
-    fn value(&self, direction: DVec3) -> Option<f64> {
-        // To signal that you shouldn't be dividing your sample by the PDF for this distribution - it's a reflection
-        None
+    fn value(&self, direction: DVec3) -> f64 {
+        0.0
     }
 
     fn generate(&self, _: &mut dyn rand::RngCore) -> DVec3 {
         self.dir
+    }
+    fn is_delta_distribution(&self) -> bool {
+        true
     }
 }
 
@@ -77,12 +104,16 @@ impl FuzzyDiracDeltaPDF {
 }
 
 impl PDF for FuzzyDiracDeltaPDF {
-    fn value(&self, direction: DVec3) -> Option<f64> {
+    fn value(&self, direction: DVec3) -> f64 {
         self.pdf.value(direction)
     }
 
     fn generate(&self, rng: &mut dyn rand::RngCore) -> DVec3 {
         (self.pdf.generate(rng) + (rand_in_unit_sphere(rng) * self.fuzziness)).normalize()
+    }
+
+    fn is_delta_distribution(&self) -> bool {
+        true
     }
 }
 
@@ -114,8 +145,8 @@ impl DielectricFresnelPDF {
 }
 
 impl PDF for DielectricFresnelPDF {
-    fn value(&self, direction: DVec3) -> Option<f64> {
-        None
+    fn value(&self, _: DVec3) -> f64 {
+        0.0
     }
 
     fn generate(&self, rng: &mut dyn rand::RngCore) -> DVec3 {
@@ -124,5 +155,8 @@ impl PDF for DielectricFresnelPDF {
         } else {
             self.refract_dir
         }
+    }
+    fn is_delta_distribution(&self) -> bool {
+        true
     }
 }

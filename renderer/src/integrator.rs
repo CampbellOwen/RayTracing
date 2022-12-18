@@ -1,6 +1,6 @@
 use glam::DVec3;
 
-use crate::{Hittable, Ray};
+use crate::{Hittable, Ray, UniformHemispherePDF};
 
 pub trait Integrator {
     fn ray_colour(
@@ -31,7 +31,15 @@ impl Integrator for PathIntegrator {
             let emitted = hr.material.emitted(hr.u, hr.v, hr.point);
 
             if let Some(material_pdf) = hr.material.scattering_pdf(&ray, &hr) {
-                let out_dir = material_pdf.generate(&mut rng);
+                let scatter_pdf = material_pdf;
+
+                //if material_pdf.is_delta_distribution() {
+                //    material_pdf
+                //} else {
+                //    Box::new(UniformHemispherePDF::new(hr.normal))
+                //    //material_pdf
+                //};
+                let out_dir = scatter_pdf.generate(&mut rng);
                 let ray_out = Ray {
                     origin: hr.point,
                     dir: out_dir,
@@ -39,7 +47,11 @@ impl Integrator for PathIntegrator {
                 };
                 let cos_theta = out_dir.dot(hr.normal);
 
-                let pdf = material_pdf.value(out_dir).unwrap_or(1.0);
+                let pdf = if scatter_pdf.is_delta_distribution() {
+                    1.0
+                } else {
+                    scatter_pdf.value(out_dir)
+                };
                 let brdf = hr.material.brdf(&ray, &hr, &ray_out);
 
                 emitted

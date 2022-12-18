@@ -12,6 +12,7 @@ pub trait Material: std::fmt::Debug + Send + Sync {
     }
     fn scattering_pdf(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<Box<dyn PDF>>;
     fn brdf(&self, ray_in: &Ray, hit_record: &HitRecord, ray_out: &Ray) -> DVec3;
+    fn is_specular(&self) -> bool;
 }
 
 #[derive(Debug)]
@@ -38,6 +39,10 @@ impl Material for Lambertian {
         self.albedo
             .sample(hit_record.u, hit_record.v, hit_record.point)
             / std::f64::consts::PI
+    }
+
+    fn is_specular(&self) -> bool {
+        false
     }
 }
 
@@ -66,6 +71,10 @@ impl Material for Metal {
     fn scattering_pdf(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<Box<dyn PDF>> {
         let reflected = reflect(ray_in.dir.normalize(), hit_record.normal);
         Some(Box::new(FuzzyDiracDeltaPDF::new(reflected, self.fuzz))) // Fuzziness makes this incorrect btw, no longer a dirac delta PDF
+    }
+
+    fn is_specular(&self) -> bool {
+        true
     }
 }
 
@@ -101,6 +110,10 @@ impl Material for Dielectric {
 
         DVec3::ONE / cosine // Divide by cos(theta) because we need to cancel out the cos(theta) from the rendering equation
     }
+
+    fn is_specular(&self) -> bool {
+        true
+    }
 }
 
 #[derive(Debug)]
@@ -119,5 +132,9 @@ impl Material for DiffuseLight {
 
     fn scattering_pdf(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<Box<dyn PDF>> {
         None
+    }
+
+    fn is_specular(&self) -> bool {
+        true // Not actually, but it's helpful to tell the integrator not to look at the PDF
     }
 }

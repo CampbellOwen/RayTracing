@@ -1,5 +1,5 @@
 use glam::DVec3;
-use rand::Rng;
+use rand::{Rng, RngCore};
 
 pub fn rand_in_range(rng: &mut dyn rand::RngCore, min: f64, max: f64) -> DVec3 {
     DVec3::new(
@@ -33,6 +33,15 @@ pub fn rand_cosine_hemisphere(rng: &mut dyn rand::RngCore) -> DVec3 {
     let y = f64::sin(phi) * sqrt_r2;
 
     DVec3::new(x, y, z)
+}
+
+// About Z axis
+pub fn rand_hemisphere(rng: &mut dyn RngCore) -> DVec3 {
+    let z = rng.gen();
+    let r = f64::max(0.0, 1.0 - z * z).sqrt();
+    let phi = 2.0 * std::f64::consts::PI * rng.gen::<f64>();
+
+    DVec3::new(r * phi.cos(), r * phi.sin(), z)
 }
 
 pub fn reflect(a: DVec3, b: DVec3) -> DVec3 {

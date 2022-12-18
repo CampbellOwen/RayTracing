@@ -383,7 +383,7 @@ fn create_random_scene(motion_blur: bool) -> SceneDescription {
             if (center - DVec3::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 if material_choice < 0.8 {
                     // Diffuse material
-                    let albedo = random() * random();
+                    let albedo = random(&mut rng) * random(&mut rng);
                     let material = Arc::new(Lambertian::new(albedo));
 
                     let center_2 = center + DVec3::new(0.0, rng.gen_range(0.0..0.5), 0.0);
@@ -771,7 +771,7 @@ fn aces_tonemapping(pixel: DVec3) -> DVec3 {
 }
 
 fn main() {
-    let width = 800;
+    let width = 1800;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
@@ -788,7 +788,7 @@ fn main() {
     let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
     println!("Done!");
 
-    let samples_per_pixel = 100;
+    let samples_per_pixel = 500;
     let max_depth = 50;
     println!(
         "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",
