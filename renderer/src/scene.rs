@@ -68,6 +68,10 @@ impl SceneBuilder {
         self
     }
 
+    pub fn add_object(&mut self, obj: Arc<dyn Hittable>) {
+        self.scene.objects.push(obj);
+    }
+
     pub fn background(mut self, background: fn(Ray) -> DVec3) -> Self {
         self.scene.background = background;
         self

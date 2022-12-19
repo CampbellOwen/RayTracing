@@ -1,5 +1,5 @@
 use glam::DVec3;
-use rand::Rng;
+use rand::{prelude::SliceRandom, Rng};
 
 use crate::{
     material::reflectance, rand_cosine_hemisphere, rand_hemisphere, rand_in_unit_sphere, reflect,
@@ -158,5 +158,45 @@ impl PDF for DielectricFresnelPDF {
     }
     fn is_delta_distribution(&self) -> bool {
         true
+    }
+}
+
+pub enum MixtureMethod {
+    Uniform,
+}
+
+pub struct MixturePDF {
+    pdfs: Vec<Box<dyn PDF>>,
+    method: MixtureMethod,
+}
+
+impl MixturePDF {
+    pub fn new(pdfs: Vec<Box<dyn PDF>>, method: MixtureMethod) -> Self {
+        Self { pdfs, method }
+    }
+}
+
+impl PDF for MixturePDF {
+    fn value(&self, direction: DVec3) -> f64 {
+        match self.method {
+            MixtureMethod::Uniform => {
+                let weight = 1.0 / self.pdfs.len() as f64;
+                self.pdfs
+                    .iter()
+                    .map(|pdf| pdf.value(direction) * weight)
+                    .sum()
+            }
+        }
+    }
+
+    fn generate(&self, rng: &mut dyn rand::RngCore) -> DVec3 {
+        match self.method {
+            MixtureMethod::Uniform => self
+                .pdfs
+                .choose(rng)
+                .expect("Should always choose")
+                .generate(rng)
+                .normalize(),
+        }
     }
 }

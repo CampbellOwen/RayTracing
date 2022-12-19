@@ -9,10 +9,11 @@ use renderer::Integrator;
 use renderer::Scene;
 use renderer::Transformable;
 use renderer::Transformed;
+use renderer::UniformSampledPathIntegrator;
 use renderer::{
-    rand_in_range, random, AARect, BVHNode, Camera, CheckerTexture, Dielectric, DiffuseLight,
-    Hittable, Image, Lambertian, Material, Metal, MovingSphere, PathIntegrator, Ray, SolidColour,
-    Sphere,
+    rand_in_range, random, AARect, BRDFSampledPathIntegrator, BVHNode, Camera, CheckerTexture,
+    Dielectric, DiffuseLight, Hittable, Image, Lambertian, Material, Metal, MovingSphere, Ray,
+    SolidColour, Sphere,
 };
 
 use glam::{DMat4, DVec3};
@@ -359,11 +360,12 @@ fn create_simple_scene() -> SceneDescription {
 }
 
 #[allow(dead_code)]
-fn create_random_scene(motion_blur: bool) -> SceneDescription {
+fn create_random_scene(motion_blur: bool) -> Scene {
+    let mut scene_builder = Scene::build();
     let mut world: Vec<Arc<dyn Hittable>> = Vec::new();
     let ground_material = Arc::new(Lambertian::new(DVec3::new(0.5, 0.5, 0.5)));
 
-    world.push(Arc::new(Sphere {
+    scene_builder.add_object(Arc::new(Sphere {
         center: DVec3::new(0.0, -1000.0, 0.0),
         radius: 1000.0,
         material: ground_material.clone(),
@@ -389,7 +391,7 @@ fn create_random_scene(motion_blur: bool) -> SceneDescription {
 
                     let center_2 = center + DVec3::new(0.0, rng.gen_range(0.0..0.5), 0.0);
 
-                    world.push(Arc::new(MovingSphere {
+                    scene_builder.add_object(Arc::new(MovingSphere {
                         center_0: center,
                         center_1: center_2,
                         time_0: 0.0,
@@ -402,7 +404,7 @@ fn create_random_scene(motion_blur: bool) -> SceneDescription {
                     let albedo = rand_in_range(&mut rng, 0.5, 1.0);
                     let fuzz = rng.gen_range(0.0..0.5);
                     let material = Arc::new(Metal::new(albedo, fuzz));
-                    world.push(Arc::new(Sphere {
+                    scene_builder.add_object(Arc::new(Sphere {
                         center,
                         radius: 0.2,
                         material,
@@ -410,7 +412,7 @@ fn create_random_scene(motion_blur: bool) -> SceneDescription {
                 } else {
                     // Glass
                     let material = Arc::new(Dielectric { ior: 1.5 });
-                    world.push(Arc::new(Sphere {
+                    scene_builder.add_object(Arc::new(Sphere {
                         center,
                         radius: 0.2,
                         material,
@@ -421,21 +423,21 @@ fn create_random_scene(motion_blur: bool) -> SceneDescription {
     }
 
     let material = Arc::new(Dielectric { ior: 1.5 });
-    world.push(Arc::new(Sphere {
+    scene_builder.add_object(Arc::new(Sphere {
         center: DVec3::new(0.0, 1.0, 0.0),
         radius: 1.0,
         material,
     }));
 
     let material = Arc::new(Lambertian::new(DVec3::new(0.4, 0.2, 0.1)));
-    world.push(Arc::new(Sphere {
+    scene_builder.add_object(Arc::new(Sphere {
         center: DVec3::new(-4.0, 1.0, 0.0),
         radius: 1.0,
         material,
     }));
 
     let material = Arc::new(Metal::new(DVec3::new(0.7, 0.6, 0.5), 0.0));
-    world.push(Arc::new(Sphere {
+    scene_builder.add_object(Arc::new(Sphere {
         center: DVec3::new(4.0, 1.0, 0.0),
         radius: 1.0,
         material,
@@ -447,9 +449,9 @@ fn create_random_scene(motion_blur: bool) -> SceneDescription {
     let up = DVec3::new(0.0, 1.0, 0.0);
 
     let dist_to_focus = 10.0;
-    let aperture = 0.1;
+    let aperture = 0.01;
 
-    let camera = Camera::new(
+    scene_builder = scene_builder.camera(Camera::new(
         look_from,
         look_at,
         up,
@@ -459,9 +461,9 @@ fn create_random_scene(motion_blur: bool) -> SceneDescription {
         dist_to_focus,
         0.0,
         if motion_blur { 1.0 } else { 0.0 },
-    );
+    ));
 
-    return (world, camera, skybox);
+    scene_builder.background(skybox).build_bvh().build()
 }
 
 #[allow(dead_code)]
@@ -655,9 +657,9 @@ fn simple_light() -> SceneDescription {
     return (world, camera, no_light);
 }
 
-fn mesh_scene() -> SceneDescription {
+fn mesh_scene() -> Scene {
     let triangle_mat = Arc::new(Lambertian {
-        albedo: Arc::new(load_texture("F:\\Models\\JapaneseTemple\\Textures\\albedo.png").unwrap()),
+        albedo: Arc::new(load_texture("models/pagoda/textures/albedo.png").unwrap()),
     });
 
     //let triangle_mat = Arc::new(Lambertian::new(DVec3::splat(0.5)));
@@ -671,12 +673,13 @@ fn mesh_scene() -> SceneDescription {
 
     let test_mesh = load_obj(
         //"F:\\Models\\cube.obj",
-        "F:\\Models\\JapaneseTemple\\model_triangulated.obj",
+        "models/pagoda/model_triangulated.obj",
         triangle_mat,
     )
     .unwrap();
 
-    let mut world: Vec<Arc<dyn Hittable>> = Vec::new();
+    let mut scene_builder = Scene::build();
+
     test_mesh.into_iter().for_each(|mesh| {
         mesh.into_iter()
             .map(|triangle| {
@@ -685,7 +688,7 @@ fn mesh_scene() -> SceneDescription {
                     Arc::new(triangle),
                 )) as Arc<dyn Hittable>
             })
-            .for_each(|triangle| world.push(triangle))
+            .for_each(|triangle| scene_builder.add_object(triangle))
     });
 
     let ground_material: Arc<dyn Material> = Arc::new(Lambertian {
@@ -694,8 +697,7 @@ fn mesh_scene() -> SceneDescription {
             DVec3::new(0.9, 0.9, 0.9),
         )),
     });
-
-    world.push(Arc::new(Sphere {
+    let light = Arc::new(Sphere {
         center: DVec3::new(40.0, 40.0, 20.0),
         radius: 25.0,
         material: Arc::new(DiffuseLight {
@@ -703,7 +705,10 @@ fn mesh_scene() -> SceneDescription {
                 colour: DVec3::new(4.0, 4.0, 4.0),
             }),
         }),
-    }));
+    });
+
+    scene_builder.add_object(light.clone());
+    scene_builder = scene_builder.lights(vec![light]);
 
     //world.push(Arc::new(Sphere {
     //    center: DVec3::new(-40.0, 40.0, -20.0),
@@ -715,11 +720,11 @@ fn mesh_scene() -> SceneDescription {
     //    }),
     //}));
 
-    //world.push(Arc::new(Sphere {
-    //    center: DVec3::new(0.0, -1000.0, 0.0),
-    //    radius: 1000.0,
-    //    material: ground_material,
-    //}));
+    scene_builder.add_object(Arc::new(Sphere {
+        center: DVec3::new(0.0, -1000.0, 0.0),
+        radius: 1000.0,
+        material: ground_material,
+    }));
 
     let look_from = DVec3::new(-2.0, 30.0, 30.0);
     let look_at = DVec3::new(0.0, 15.0, 0.0);
@@ -736,7 +741,11 @@ fn mesh_scene() -> SceneDescription {
         (look_at - look_from).length(),
     );
 
-    (world, camera, no_light)
+    scene_builder
+        .camera(camera)
+        .background(no_light)
+        .build_bvh()
+        .build()
 }
 
 fn load_texture(filename: &str) -> Option<Image> {
@@ -772,13 +781,14 @@ fn aces_tonemapping(pixel: DVec3) -> DVec3 {
 }
 
 fn main() {
-    let width = 1800;
+    let width = 800;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
     //let (world, camera, background_colour) = simple_triangle_scene();
     //let (world, camera, background_colour) = mesh_scene();
-    let (world, camera, background_colour) = create_random_scene(false);
+    //let scene = create_random_scene(false);
+    let scene = mesh_scene();
     //let (world, camera, background_colour) = create_simple_scene();
     //let (world, camera, background_colour) = create_sphere_scene();
     //let (world, camera, background_colour) = create_cornell_scene();
@@ -789,21 +799,15 @@ fn main() {
     //let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
     //println!("Done!");
 
-    let scene = Scene::build()
-        .objects(world)
-        .camera(camera)
-        .background(background_colour)
-        .build_bvh()
-        .build();
-
-    let samples_per_pixel = 5;
+    let samples_per_pixel = 10;
     let max_depth = 50;
     println!(
         "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",
         samples_per_pixel, max_depth, width, height
     );
 
-    let integrator = PathIntegrator {};
+    //let integrator = BRDFSampledPathIntegrator {};
+    let integrator = UniformSampledPathIntegrator {};
 
     let tile_size = 16;
     let num_tiles = (
