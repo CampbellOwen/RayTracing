@@ -44,6 +44,10 @@ pub fn rand_hemisphere(rng: &mut dyn RngCore) -> DVec3 {
     DVec3::new(r * phi.cos(), r * phi.sin(), z)
 }
 
+pub fn spherical_direction(sin_theta: f64, cos_theta: f64, phi: f64) -> DVec3 {
+    DVec3::new(sin_theta * phi.cos(), sin_theta * phi.sin(), cos_theta)
+}
+
 pub fn reflect(a: DVec3, b: DVec3) -> DVec3 {
     a - (b * a.dot(b) * 2.0)
 }

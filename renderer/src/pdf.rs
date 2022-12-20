@@ -64,6 +64,21 @@ impl PDF for UniformHemispherePDF {
     }
 }
 
+pub struct UniformSpherePDF {
+    pub center: DVec3,
+    pub radius: f64,
+}
+
+impl PDF for UniformSpherePDF {
+    fn value(&self, _: DVec3) -> f64 {
+        1.0 / (4.0 * std::f64::consts::PI * (self.radius * self.radius))
+    }
+
+    fn generate(&self, rng: &mut dyn rand::RngCore) -> DVec3 {
+        (rand_in_unit_sphere(rng).normalize() * self.radius) + self.center
+    }
+}
+
 pub struct DiracDeltaPDF {
     dir: DVec3,
 }
@@ -161,8 +176,10 @@ impl PDF for DielectricFresnelPDF {
     }
 }
 
+#[derive(PartialEq)]
 pub enum MixtureMethod {
     Uniform,
+    PowerHeuristic,
 }
 
 pub struct MixturePDF {
@@ -172,6 +189,9 @@ pub struct MixturePDF {
 
 impl MixturePDF {
     pub fn new(pdfs: Vec<Box<dyn PDF>>, method: MixtureMethod) -> Self {
+        if method == MixtureMethod::PowerHeuristic && pdfs.len() > 2 {
+            panic!("Power heuristic only implemented for 2 PDFS");
+        }
         Self { pdfs, method }
     }
 }
@@ -186,6 +206,7 @@ impl PDF for MixturePDF {
                     .map(|pdf| pdf.value(direction) * weight)
                     .sum()
             }
+            MixtureMethod::PowerHeuristic => todo!(),
         }
     }
 
@@ -197,6 +218,39 @@ impl PDF for MixturePDF {
                 .expect("Should always choose")
                 .generate(rng)
                 .normalize(),
+            MixtureMethod::PowerHeuristic => todo!(),
         }
+    }
+}
+
+pub struct UniformConePDF {
+    basis: OrthoNormalBasis,
+    cos_theta_max: f64,
+}
+
+impl UniformConePDF {
+    pub fn new(normal: DVec3, cos_theta_max: f64) -> Self {
+        Self {
+            basis: OrthoNormalBasis::from_w(&normal),
+            cos_theta_max,
+        }
+    }
+}
+
+impl PDF for UniformConePDF {
+    fn value(&self, _: DVec3) -> f64 {
+        1.0 / (2.0 * std::f64::consts::PI * (1.0 - self.cos_theta_max))
+    }
+
+    fn generate(&self, rng: &mut dyn rand::RngCore) -> DVec3 {
+        let r1: f64 = rng.gen();
+        let cos_theta = (1.0 - r1) + (r1 * self.cos_theta_max);
+        let sin_theta = (1.0 - (cos_theta * cos_theta)).sqrt();
+        let phi = rng.gen::<f64>() * 2.0 * std::f64::consts::PI;
+        self.basis.local(&DVec3::new(
+            f64::cos(phi) * sin_theta,
+            f64::sin(phi) * sin_theta,
+            cos_theta,
+        ))
     }
 }

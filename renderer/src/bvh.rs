@@ -3,6 +3,7 @@ use std::{cmp::Ordering, sync::Arc};
 use crate::hittable::NullHittable;
 
 use super::{HitRecord, Hittable, Triangle, AABB};
+use glam::DVec3;
 use rand::{self, Rng};
 
 #[derive(Clone)]
@@ -106,6 +107,14 @@ impl Hittable for BVHNode {
 
     fn bounding_box(&self, _: f64, _: f64) -> Option<AABB> {
         Some(self.bbox.clone())
+    }
+
+    fn sample_uniform(&self, _: &mut dyn rand::RngCore) -> DVec3 {
+        todo!()
+    }
+
+    fn pdf_uniform(&self, point: glam::DVec3) -> f64 {
+        todo!()
     }
 }
 

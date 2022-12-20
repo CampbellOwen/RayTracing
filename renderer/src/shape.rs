@@ -1,8 +1,14 @@
 use std::{ops::Mul, sync::Arc};
 
+use crate::{
+    rand_in_unit_sphere, spherical_direction, OrthoNormalBasis, SampleableLight, UniformConePDF,
+    UniformSpherePDF, PDF,
+};
+
 use super::{HitRecord, Hittable, Material, Ray, AABB};
 
 use glam::{DMat4, DVec3, DVec4, Vec4Swizzles};
+use rand::Rng;
 
 pub trait Transformable {
     fn transform(&self, transform: &DMat4) -> Self;
@@ -24,6 +30,25 @@ impl Transformable for Sphere {
             radius: transform.mul(r).length(),
             material: self.material.clone(),
         }
+    }
+}
+
+impl SampleableLight for Sphere {
+    fn pdf_for_point(&self, point: DVec3) -> Box<dyn PDF> {
+        if (point - self.center).length_squared() <= self.radius * self.radius {
+            return Box::new(UniformSpherePDF {
+                center: self.center,
+                radius: self.radius,
+            });
+        }
+
+        let sin_theta_max_2 = (self.radius * self.radius) / (point.distance_squared(self.center));
+        let cos_theta_max = f64::max(0.0, 1.0 - sin_theta_max_2).sqrt();
+
+        Box::new(UniformConePDF::new(
+            (self.center - point).normalize(),
+            cos_theta_max,
+        ))
     }
 }
 
@@ -112,6 +137,66 @@ impl Hittable for Sphere {
             max: self.center + DVec3::new(self.radius, self.radius, self.radius),
         })
     }
+
+    fn sample_uniform(&self, rng: &mut dyn rand::RngCore) -> DVec3 {
+        (rand_in_unit_sphere(rng) * self.radius) + self.center
+    }
+
+    fn pdf_uniform(&self, point: DVec3) -> f64 {
+        1.0 / (4.0 * std::f64::consts::PI * (self.radius * self.radius))
+    }
+    fn sample_from_ref(&self, rng: &mut dyn rand::RngCore, reference_point: DVec3) -> DVec3 {
+        if (reference_point - self.center).length_squared() <= self.radius * self.radius {
+            return self.sample_uniform(rng);
+        }
+
+        let ref_to_sphere = (self.center - reference_point).normalize();
+        let local_coordinates = OrthoNormalBasis::from_w(&ref_to_sphere);
+
+        // Sample sphere uniformly inside subtended cone
+        // theta and phi for values in sample in cone
+        let sin_theta_max2 =
+            (self.radius * self.radius) / reference_point.distance_squared(self.center);
+
+        let cos_theta_max = (f64::max(0.0, 1.0 - sin_theta_max2)).sqrt();
+
+        let pdf = UniformConePDF::new(ref_to_sphere, cos_theta_max);
+        pdf.generate(rng)
+        //let rand_1 = rng.gen::<f64>();
+        //let rand_2 = rng.gen::<f64>();
+        //let cos_theta = (1.0 - rand_1) + rand_1 * cos_theta_max;
+        //let sin_theta = f64::max(0.0, 1.0 - (cos_theta * cos_theta)).sqrt();
+        //let phi = rand_2 * 2.0 * std::f64::consts::PI;
+
+        //let dc = reference_point.distance(self.center);
+        //let ds = dc * cos_theta
+        //    - f64::max(
+        //        0.0,
+        //        (self.radius * self.radius) - (dc * dc) - (sin_theta * sin_theta),
+        //    )
+        //    .sqrt();
+
+        //let cos_alpha =
+        //    ((dc * dc) + (self.radius * self.radius) - (ds * ds)) / (2.0 * dc * self.radius);
+        //let sin_alpha = f64::max(0.0, 1.0 - (cos_alpha * cos_alpha)).sqrt();
+
+        //let sampled_point = local_coordinates
+        //    .local(&(spherical_direction(sin_alpha, cos_alpha, phi) * self.radius));
+
+        //sampled_point
+    }
+
+    fn pdf_from_ref(&self, reference_point: DVec3, pt: DVec3) -> f64 {
+        if (reference_point - self.center).length_squared() <= self.radius * self.radius {
+            return self.pdf_uniform(pt);
+        }
+
+        let sin_theta_max_2 = (self.radius * self.radius) / (pt.distance_squared(self.center));
+        let cos_theta_max = f64::max(0.0, 1.0 - sin_theta_max_2).sqrt();
+
+        let pdf = UniformConePDF::new((pt - reference_point).normalize(), cos_theta_max);
+        pdf.value(pt)
+    }
 }
 
 pub struct MovingSphere {
@@ -159,6 +244,14 @@ impl Hittable for MovingSphere {
                 max: center_1 + radius_vec,
             },
         ))
+    }
+
+    fn sample_uniform(&self, _: &mut dyn rand::RngCore) -> DVec3 {
+        todo!()
+    }
+
+    fn pdf_uniform(&self, point: DVec3) -> f64 {
+        todo!()
     }
 }
 
@@ -209,5 +302,40 @@ impl Hittable for AARect {
             min: DVec3::new(min_x, min_y, self.z - 0.0001),
             max: DVec3::new(max_x, max_y, self.z + 0.0001),
         })
+    }
+
+    fn sample_uniform(&self, _: &mut dyn rand::RngCore) -> DVec3 {
+        todo!()
+    }
+
+    fn pdf_uniform(&self, point: DVec3) -> f64 {
+        todo!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Lambertian;
+
+    use super::*;
+
+    #[test]
+    fn sample_sphere_test() {
+        let lit_point = DVec3::ZERO;
+        let sphere_light = Sphere {
+            center: DVec3::new(12.0, 12.0, 12.0),
+            radius: 6.0,
+            material: Arc::new(Lambertian::new(DVec3::ZERO)),
+        };
+
+        let mut rng = rand::thread_rng();
+        for _ in 0..500 {
+            let sample = sphere_light
+                .sample_from_ref(&mut rng, lit_point)
+                .normalize();
+            println!("{}", sample);
+        }
+
+        assert!(false)
     }
 }

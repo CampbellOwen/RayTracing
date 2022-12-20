@@ -1,10 +1,22 @@
 use std::sync::Arc;
 
+use glam::DVec3;
+
 use super::{HitRecord, Ray, AABB};
 
 pub trait Hittable: Sync + Send {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
     fn bounding_box(&self, time_0: f64, time_1: f64) -> Option<AABB>;
+
+    fn sample_uniform(&self, rng: &mut dyn rand::RngCore) -> DVec3;
+    fn pdf_uniform(&self, point: DVec3) -> f64;
+
+    fn sample_from_ref(&self, rng: &mut dyn rand::RngCore, reference_point: DVec3) -> DVec3 {
+        todo!()
+    }
+    fn pdf_from_ref(&self, reference_point: DVec3, pt: DVec3) -> f64 {
+        todo!()
+    }
 }
 
 pub struct NullHittable {}
@@ -15,6 +27,14 @@ impl Hittable for NullHittable {
 
     fn bounding_box(&self, time_0: f64, time_1: f64) -> Option<AABB> {
         None
+    }
+
+    fn sample_uniform(&self, _: &mut dyn rand::RngCore) -> DVec3 {
+        DVec3::ZERO
+    }
+
+    fn pdf_uniform(&self, point: DVec3) -> f64 {
+        0.0
     }
 }
 
@@ -47,6 +67,14 @@ impl Hittable for Vec<Arc<dyn Hittable>> {
             ))
         })
     }
+
+    fn sample_uniform(&self, _: &mut dyn rand::RngCore) -> DVec3 {
+        todo!()
+    }
+
+    fn pdf_uniform(&self, point: DVec3) -> f64 {
+        todo!()
+    }
 }
 
 impl Hittable for &[Arc<dyn Hittable>] {
@@ -76,6 +104,14 @@ impl Hittable for &[Arc<dyn Hittable>] {
                 &hittable.bounding_box(time_0, time_1)?,
             ))
         })
+    }
+
+    fn sample_uniform(&self, _: &mut dyn rand::RngCore) -> DVec3 {
+        todo!()
+    }
+
+    fn pdf_uniform(&self, point: DVec3) -> f64 {
+        todo!()
     }
 }
 

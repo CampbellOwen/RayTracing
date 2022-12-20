@@ -5,7 +5,9 @@ use rand::Rng;
 use rand::SeedableRng;
 use rand_pcg::Pcg64;
 use renderer::create_mesh;
+use renderer::ImportanceSampleLightIntegrator;
 use renderer::Integrator;
+use renderer::MultipleImportanceSampleIntegrator;
 use renderer::Scene;
 use renderer::Transformable;
 use renderer::Transformed;
@@ -799,7 +801,7 @@ fn main() {
     //let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
     //println!("Done!");
 
-    let samples_per_pixel = 10;
+    let samples_per_pixel = 5;
     let max_depth = 50;
     println!(
         "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",
@@ -807,7 +809,9 @@ fn main() {
     );
 
     //let integrator = BRDFSampledPathIntegrator {};
-    let integrator = UniformSampledPathIntegrator {};
+    //let integrator = UniformSampledPathIntegrator {};
+    let integrator = ImportanceSampleLightIntegrator {};
+    //let integrator = MultipleImportanceSampleIntegrator {};
 
     let tile_size = 16;
     let num_tiles = (

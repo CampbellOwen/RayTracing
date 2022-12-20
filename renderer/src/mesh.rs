@@ -118,6 +118,14 @@ impl Hittable for Triangle {
 
         Some(AABB { min, max })
     }
+
+    fn sample_uniform(&self, _: &mut dyn rand::RngCore) -> DVec3 {
+        todo!()
+    }
+
+    fn pdf_uniform(&self, point: DVec3) -> f64 {
+        todo!()
+    }
 }
 
 impl Hittable for Vec<Triangle> {
@@ -148,6 +156,14 @@ impl Hittable for Vec<Triangle> {
                 &hittable.bounding_box(time_0, time_1)?,
             ))
         })
+    }
+
+    fn sample_uniform(&self, _: &mut dyn rand::RngCore) -> DVec3 {
+        todo!()
+    }
+
+    fn pdf_uniform(&self, point: DVec3) -> f64 {
+        todo!()
     }
 }
 

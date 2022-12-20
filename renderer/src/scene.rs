@@ -2,12 +2,15 @@ use std::sync::Arc;
 
 use glam::DVec3;
 
-use crate::{BVHNode, Camera, HitRecord, Hittable, Ray, AABB};
+use crate::{BVHNode, Camera, HitRecord, Hittable, Ray, AABB, PDF};
 
+pub trait SampleableLight: Hittable {
+    fn pdf_for_point(&self, point: DVec3) -> Box<dyn PDF>;
+}
 #[derive(Clone)]
 pub struct Scene {
     objects: Vec<Arc<dyn Hittable>>,
-    pub lights: Vec<Arc<dyn Hittable>>,
+    pub lights: Vec<Arc<dyn SampleableLight>>,
     pub camera: Camera,
     pub background: fn(Ray) -> DVec3,
     bvh: Option<BVHNode>,
@@ -40,6 +43,14 @@ impl Hittable for Scene {
         } else {
             self.objects.bounding_box(time_0, time_1)
         }
+    }
+
+    fn sample_uniform(&self, _: &mut dyn rand::RngCore) -> DVec3 {
+        todo!()
+    }
+
+    fn pdf_uniform(&self, point: DVec3) -> f64 {
+        todo!()
     }
 }
 
@@ -77,7 +88,7 @@ impl SceneBuilder {
         self
     }
 
-    pub fn lights(mut self, lights: Vec<Arc<dyn Hittable>>) -> Self {
+    pub fn lights(mut self, lights: Vec<Arc<dyn SampleableLight>>) -> Self {
         self.scene.lights = lights;
         self
     }

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use glam::{DMat4, DVec4, Vec4Swizzles};
+use glam::{DMat4, DVec3, DVec4, Vec4Swizzles};
 
 use crate::{HitRecord, Hittable, Ray, AABB};
 
@@ -58,6 +58,14 @@ impl Hittable for Transformed {
         let min = (self.t * min4).xyz();
 
         Some(AABB { max, min })
+    }
+
+    fn sample_uniform(&self, _: &mut dyn rand::RngCore) -> DVec3 {
+        todo!()
+    }
+
+    fn pdf_uniform(&self, point: glam::DVec3) -> f64 {
+        todo!()
     }
 }
 
