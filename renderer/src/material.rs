@@ -7,7 +7,7 @@ use crate::{
 use glam::DVec3;
 
 pub trait Material: std::fmt::Debug + Send + Sync {
-    fn emitted(&self, _: f64, _: f64, _: DVec3) -> DVec3 {
+    fn emitted(&self, u: f64, v: f64, p: DVec3) -> DVec3 {
         DVec3::new(0.0, 0.0, 0.0)
     }
     fn scattering_pdf(&self, ray_in: &Ray, hit_record: &HitRecord) -> Option<Box<dyn PDF>>;

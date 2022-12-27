@@ -659,6 +659,97 @@ fn simple_light() -> SceneDescription {
     return (world, camera, no_light);
 }
 
+fn single_sphere_light_scene() -> Scene {
+    //let triangle_mat = Arc::new(Lambertian {
+    //    albedo: Arc::new(load_texture("models/pagoda/textures/albedo.png").unwrap()),
+    //});
+
+    //let triangle_mat = Arc::new(Lambertian::new(DVec3::splat(0.5)));
+
+    //let test_mesh = load_obj(
+    //    //"F:\\Models\\JapaneseTemple\\model_triangulated.obj",
+    //    "F:\\Models\\cube.obj",
+    //    triangle_mat,
+    //)
+    //.unwrap();
+
+    //let test_mesh = load_obj(
+    //    //"F:\\Models\\cube.obj",
+    //    "models/pagoda/model_triangulated.obj",
+    //    triangle_mat,
+    //)
+    //.unwrap();
+
+    let mut scene_builder = Scene::build();
+
+    //test_mesh.into_iter().for_each(|mesh| {
+    //    mesh.into_iter()
+    //        .map(|triangle| {
+    //            Arc::new(Transformed::new(
+    //                DMat4::from_translation(DVec3::splat(5.0)),
+    //                Arc::new(triangle),
+    //            )) as Arc<dyn Hittable>
+    //        })
+    //        .for_each(|triangle| scene_builder.add_object(triangle))
+    //});
+
+    let ground_material: Arc<dyn Material> = Arc::new(Lambertian {
+        albedo: Arc::new(CheckerTexture::new(
+            DVec3::new(0.2, 0.3, 0.1),
+            DVec3::new(0.9, 0.9, 0.9),
+        )),
+    });
+    let light = Arc::new(Sphere {
+        center: DVec3::new(10.0, 5.0, 0.0),
+        radius: 1.0,
+        material: Arc::new(DiffuseLight {
+            emit_colour: Arc::new(SolidColour {
+                colour: DVec3::new(114.0, 114.0, 114.0),
+            }),
+        }),
+    });
+
+    scene_builder.add_object(light.clone());
+    scene_builder = scene_builder.lights(vec![light]);
+
+    //world.push(Arc::new(Sphere {
+    //    center: DVec3::new(-40.0, 40.0, -20.0),
+    //    radius: 25.0,
+    //    material: Arc::new(DiffuseLight {
+    //        emit_colour: Arc::new(SolidColour {
+    //            colour: DVec3::new(4.0, 4.0, 4.0),
+    //        }),
+    //    }),
+    //}));
+
+    scene_builder.add_object(Arc::new(Sphere {
+        center: DVec3::new(0.0, -1000.0, 0.0),
+        radius: 1000.0,
+        material: ground_material,
+    }));
+
+    let look_from = DVec3::new(0.0, 10.0, 20.0);
+    let look_at = DVec3::new(0.0, 0.0, 0.0);
+    //let look_from = DVec3::new(-2.0, 2.0, 2.0);
+    //let look_at = DVec3::new(0.0, 0.0, 0.0);
+
+    let camera = Camera::new_instant(
+        look_from,
+        look_at,
+        DVec3::new(0.0, 1.0, 0.0),
+        80.0,
+        16.0 / 9.0,
+        0.1,
+        (look_at - look_from).length(),
+    );
+
+    scene_builder
+        .camera(camera)
+        .background(no_light)
+        .build_bvh()
+        .build()
+}
+
 fn mesh_scene() -> Scene {
     let triangle_mat = Arc::new(Lambertian {
         albedo: Arc::new(load_texture("models/pagoda/textures/albedo.png").unwrap()),
@@ -789,8 +880,9 @@ fn main() {
 
     //let (world, camera, background_colour) = simple_triangle_scene();
     //let (world, camera, background_colour) = mesh_scene();
+    let scene = single_sphere_light_scene();
     //let scene = create_random_scene(false);
-    let scene = mesh_scene();
+    //let scene = mesh_scene();
     //let (world, camera, background_colour) = create_simple_scene();
     //let (world, camera, background_colour) = create_sphere_scene();
     //let (world, camera, background_colour) = create_cornell_scene();
@@ -810,8 +902,8 @@ fn main() {
 
     //let integrator = BRDFSampledPathIntegrator {};
     //let integrator = UniformSampledPathIntegrator {};
-    let integrator = ImportanceSampleLightIntegrator {};
-    //let integrator = MultipleImportanceSampleIntegrator {};
+    //let integrator = ImportanceSampleLightIntegrator {};
+    let integrator = MultipleImportanceSampleIntegrator {};
 
     let tile_size = 16;
     let num_tiles = (

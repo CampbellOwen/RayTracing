@@ -238,7 +238,14 @@ impl UniformConePDF {
 }
 
 impl PDF for UniformConePDF {
-    fn value(&self, _: DVec3) -> f64 {
+    fn value(&self, direction: DVec3) -> f64 {
+        //let distrib_normal = self.basis.w;
+        //let cos_theta = direction.dot(distrib_normal);
+
+        //if cos_theta > (self.cos_theta_max) {
+        //    return 0.0;
+        //}
+
         1.0 / (2.0 * std::f64::consts::PI * (1.0 - self.cos_theta_max))
     }
 

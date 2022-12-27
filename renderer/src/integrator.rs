@@ -13,6 +13,10 @@ pub fn power_heuristic(num_f: u32, pdf_f: f64, num_g: u32, pdf_g: f64) -> f64 {
 
     (f * f) / ((f * f) + (g * g))
 }
+
+pub fn balance_heuristic(pdf_f: f64, pdf_g: f64) -> f64 {
+    pdf_f / (pdf_f + pdf_g)
+}
 pub struct MultipleImportanceSampleIntegrator {}
 
 impl Integrator for MultipleImportanceSampleIntegrator {
@@ -77,29 +81,48 @@ impl Integrator for MultipleImportanceSampleIntegrator {
         if let Some((light, light_pdf, light_ray)) = light {
             // HAVE LIGHT AND IS VISIBLE
 
-            let light_pdf_value = light_pdf.value(light_ray.dir);
-
             let material_out = Ray {
                 origin: hr.point,
                 dir: material_pdf.generate(&mut rng).normalize(),
                 time: ray.time,
             };
 
+            let light_pdf_value = light_pdf.value(light_ray.dir);
+
             let material_cos_theta = material_out.dir.dot(hr.normal);
             let material_out_pdf = material_pdf.value(material_out.dir);
-            let material_weight = power_heuristic(1, material_out_pdf, 1, light_pdf_value);
+            let light_with_material_pdf = material_pdf.value(light_ray.dir);
+
+            let material_ray_colour = self.ray_colour(material_out.clone(), scene, depth - 1);
+            let material_ray_has_light = material_ray_colour.x >= 0.001
+                && material_ray_colour.y >= 0.001
+                && material_ray_colour.z >= 0.001;
+            let material_weight = balance_heuristic(
+                material_out_pdf * if material_ray_has_light { 1.0 } else { 0.0 },
+                light_with_material_pdf,
+            );
 
             let material_contribution = hr.material.brdf(&ray, &hr, &material_out)
                 * material_cos_theta
-                * self.ray_colour(material_out, scene, depth - 1)
+                * material_ray_colour
                 * material_weight
                 / material_out_pdf;
 
             let light_cos_theta = hr.normal.dot(light_ray.dir);
-            let light_weight = power_heuristic(1, light_pdf_value, 1, material_out_pdf);
+            let material_with_light_pdf = light_pdf.value(material_out.dir);
+            let light_weight = power_heuristic(1, light_pdf_value, 1, material_with_light_pdf);
+            //let light_weight = 1.0;
+
+            let light_hit = light.hit(&light_ray, 0.001, 10000.0).expect("Should hit");
+            let light_emit = light_hit
+                .material
+                .emitted(light_hit.u, light_hit.v, hr.point);
+
+            //let light_emit = light_emit / light_hit.point.distance_squared(hr.point);
+
             let light_contribution = hr.material.brdf(&ray, &hr, &light_ray)
                 * light_cos_theta
-                * self.ray_colour(light_ray, scene, 1)
+                * light_emit
                 * light_weight
                 / light_pdf_value;
 
@@ -140,7 +163,7 @@ impl Integrator for ImportanceSampleLightIntegrator {
                     let lights = &scene.lights;
                     if let Some(light) = lights.choose(&mut rng) {
                         Box::new(MixturePDF::new(
-                            vec![/*material_pdf,*/ light.pdf_for_point(hr.point)],
+                            vec![material_pdf, light.pdf_for_point(hr.point)],
                             crate::MixtureMethod::Uniform,
                         ))
                     } else {
