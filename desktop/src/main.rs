@@ -454,9 +454,20 @@ fn create_random_scene(motion_blur: bool) -> Scene {
             }),
         }),
     });
-
     scene_builder.add_object(light.clone());
-    scene_builder = scene_builder.lights(vec![light]);
+
+    let light2 = Arc::new(Sphere {
+        center: DVec3::new(8.0, 5.0, 0.0),
+        radius: 2.0,
+        material: Arc::new(DiffuseLight {
+            emit_colour: Arc::new(SolidColour {
+                colour: DVec3::new(10.0, 10.0, 10.0),
+            }),
+        }),
+    });
+    scene_builder.add_object(light2.clone());
+
+    scene_builder = scene_builder.lights(vec![light, light2]);
 
     let aspect_ratio = 16.0 / 9.0;
     let look_from = DVec3::new(8.0, 2.0, 10.0);
@@ -910,7 +921,7 @@ fn aces_tonemapping(pixel: DVec3) -> DVec3 {
 }
 
 fn main() {
-    let width = 800;
+    let width = 1920;
     let aspect_ratio = 16.0 / 9.0;
     let height = (width as f64 / aspect_ratio) as u32;
 
@@ -929,17 +940,17 @@ fn main() {
     //let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
     //println!("Done!");
 
-    let samples_per_pixel = 5000;
-    let max_depth = 50;
+    let samples_per_pixel = 10;
+    let max_depth = 5;
     println!(
         "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",
         samples_per_pixel, max_depth, width, height
     );
 
-    let integrator = BRDFSampledPathIntegrator {};
+    //let integrator = BRDFSampledPathIntegrator {};
     //let integrator = UniformSampledPathIntegrator {};
     //let integrator = ImportanceSampleLightIntegrator {};
-    //let integrator = MultipleImportanceSampleIntegrator {};
+    let integrator = MultipleImportanceSampleIntegrator {};
 
     let tile_size = 16;
     let num_tiles = (
@@ -965,8 +976,8 @@ fn main() {
     let render_start_time = Instant::now();
 
     (0..(num_tiles.0 * num_tiles.1))
-        .into_par_iter()
-        //.into_iter()
+        //.into_par_iter()
+        .into_iter()
         .for_each(|tile_index| {
             let tile_xy = (tile_index % num_tiles.0, tile_index / num_tiles.0);
             let tile_origin = (tile_xy.0 * tile_size, tile_xy.1 * tile_size);
