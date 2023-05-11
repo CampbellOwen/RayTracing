@@ -445,6 +445,19 @@ fn create_random_scene(motion_blur: bool) -> Scene {
         material,
     }));
 
+    let light = Arc::new(Sphere {
+        center: DVec3::new(-10.0, 5.0, 10.0),
+        radius: 1.0,
+        material: Arc::new(DiffuseLight {
+            emit_colour: Arc::new(SolidColour {
+                colour: DVec3::new(114.0, 114.0, 114.0),
+            }),
+        }),
+    });
+
+    scene_builder.add_object(light.clone());
+    scene_builder = scene_builder.lights(vec![light]);
+
     let aspect_ratio = 16.0 / 9.0;
     let look_from = DVec3::new(8.0, 2.0, 10.0);
     let look_at = DVec3::new(0.0, 0.0, 0.0);
@@ -465,7 +478,8 @@ fn create_random_scene(motion_blur: bool) -> Scene {
         if motion_blur { 1.0 } else { 0.0 },
     ));
 
-    scene_builder.background(skybox).build_bvh().build()
+    //scene_builder.background(skybox).build_bvh().build()
+    scene_builder.background(no_light).build_bvh().build()
 }
 
 #[allow(dead_code)]
@@ -710,7 +724,18 @@ fn single_sphere_light_scene() -> Scene {
     });
 
     scene_builder.add_object(light.clone());
-    scene_builder = scene_builder.lights(vec![light]);
+    let light2 = Arc::new(Sphere {
+        center: DVec3::new(-10.0, 5.0, -10.0),
+        radius: 1.0,
+        material: Arc::new(DiffuseLight {
+            emit_colour: Arc::new(SolidColour {
+                colour: DVec3::new(114.0, 114.0, 114.0),
+            }),
+        }),
+    });
+
+    scene_builder.add_object(light2.clone());
+    scene_builder = scene_builder.lights(vec![light, light2]);
 
     //world.push(Arc::new(Sphere {
     //    center: DVec3::new(-40.0, 40.0, -20.0),
@@ -799,9 +824,20 @@ fn mesh_scene() -> Scene {
             }),
         }),
     });
-
     scene_builder.add_object(light.clone());
-    scene_builder = scene_builder.lights(vec![light]);
+
+    let light2 = Arc::new(Sphere {
+        center: DVec3::new(-40.0, 40.0, -20.0),
+        radius: 25.0,
+        material: Arc::new(DiffuseLight {
+            emit_colour: Arc::new(SolidColour {
+                colour: DVec3::new(4.0, 4.0, 4.0),
+            }),
+        }),
+    });
+    scene_builder.add_object(light2.clone());
+
+    scene_builder = scene_builder.lights(vec![light, light2]);
 
     //world.push(Arc::new(Sphere {
     //    center: DVec3::new(-40.0, 40.0, -20.0),
@@ -880,8 +916,8 @@ fn main() {
 
     //let (world, camera, background_colour) = simple_triangle_scene();
     //let (world, camera, background_colour) = mesh_scene();
-    let scene = single_sphere_light_scene();
-    //let scene = create_random_scene(false);
+    //let scene = single_sphere_light_scene();
+    let scene = create_random_scene(false);
     //let scene = mesh_scene();
     //let (world, camera, background_colour) = create_simple_scene();
     //let (world, camera, background_colour) = create_sphere_scene();
@@ -893,17 +929,17 @@ fn main() {
     //let bvh = BVHNode::new(world.as_slice(), 0.0, 0.0);
     //println!("Done!");
 
-    let samples_per_pixel = 5;
+    let samples_per_pixel = 5000;
     let max_depth = 50;
     println!(
         "Rendering scene with {} samples per pixel, {} max bounces, at a resolution of {}x{}",
         samples_per_pixel, max_depth, width, height
     );
 
-    //let integrator = BRDFSampledPathIntegrator {};
+    let integrator = BRDFSampledPathIntegrator {};
     //let integrator = UniformSampledPathIntegrator {};
     //let integrator = ImportanceSampleLightIntegrator {};
-    let integrator = MultipleImportanceSampleIntegrator {};
+    //let integrator = MultipleImportanceSampleIntegrator {};
 
     let tile_size = 16;
     let num_tiles = (

@@ -17,6 +17,15 @@ pub fn power_heuristic(num_f: u32, pdf_f: f64, num_g: u32, pdf_g: f64) -> f64 {
 pub fn balance_heuristic(pdf_f: f64, pdf_g: f64) -> f64 {
     pdf_f / (pdf_f + pdf_g)
 }
+
+pub struct IterativeMISIntegrator {}
+
+impl Integrator for IterativeMISIntegrator {
+    fn ray_colour(&self, ray: Ray, scene: &Scene, depth: i32) -> DVec3 {
+        DVec3::ZERO
+    }
+}
+
 pub struct MultipleImportanceSampleIntegrator {}
 
 impl Integrator for MultipleImportanceSampleIntegrator {
@@ -87,20 +96,44 @@ impl Integrator for MultipleImportanceSampleIntegrator {
                 time: ray.time,
             };
 
+            let light_hit = light.hit(&light_ray, 0.001, 10000.0).expect("Should hit");
             let light_pdf_value = light_pdf.value(light_ray.dir);
-
             let material_cos_theta = material_out.dir.dot(hr.normal);
+
             let material_out_pdf = material_pdf.value(material_out.dir);
+
             let light_with_material_pdf = material_pdf.value(light_ray.dir);
+
+            let light_emit = light_hit
+                .material
+                .emitted(light_hit.u, light_hit.v, hr.point);
+
+            //if let Some(material_ray_hit_light) = light.hit(&material_out, 0.001, 10000.0) {
+            //    // Cannot mix the brdf sampled ray if it hits the same light as our light ray
+            //    return hr.material.brdf(&ray, &hr, &light_ray) * light_cos_theta * light_emit
+            //        / light_pdf_value;
+            //}
+            let material_ray_hit_light = light.hit(&material_out, 0.001, 10000.0).is_some();
 
             let material_ray_colour = self.ray_colour(material_out.clone(), scene, depth - 1);
             let material_ray_has_light = material_ray_colour.x >= 0.001
                 && material_ray_colour.y >= 0.001
                 && material_ray_colour.z >= 0.001;
-            let material_weight = balance_heuristic(
-                material_out_pdf * if material_ray_has_light { 1.0 } else { 0.0 },
-                light_with_material_pdf,
-            );
+
+            let material_weight = if material_ray_has_light {
+                power_heuristic(
+                    1,
+                    material_out_pdf,
+                    1,
+                    if material_ray_hit_light {
+                        light_pdf.value(material_out.dir)
+                    } else {
+                        0.0
+                    },
+                )
+            } else {
+                0.0
+            };
 
             let material_contribution = hr.material.brdf(&ray, &hr, &material_out)
                 * material_cos_theta
@@ -108,18 +141,10 @@ impl Integrator for MultipleImportanceSampleIntegrator {
                 * material_weight
                 / material_out_pdf;
 
-            let light_cos_theta = hr.normal.dot(light_ray.dir);
-            let material_with_light_pdf = light_pdf.value(material_out.dir);
-            let light_weight = power_heuristic(1, light_pdf_value, 1, material_with_light_pdf);
-            //let light_weight = 1.0;
+            let light_weight =
+                power_heuristic(1, light_pdf_value, 1, material_pdf.value(light_ray.dir));
 
-            let light_hit = light.hit(&light_ray, 0.001, 10000.0).expect("Should hit");
-            let light_emit = light_hit
-                .material
-                .emitted(light_hit.u, light_hit.v, hr.point);
-
-            //let light_emit = light_emit / light_hit.point.distance_squared(hr.point);
-
+            let light_cos_theta = hr.normal.dot(light_ray.dir).max(0.0);
             let light_contribution = hr.material.brdf(&ray, &hr, &light_ray)
                 * light_cos_theta
                 * light_emit
@@ -155,6 +180,9 @@ impl Integrator for ImportanceSampleLightIntegrator {
 
         if let Some(hr) = scene.hit(&ray, 0.001, 100000.0) {
             let emitted = hr.material.emitted(hr.u, hr.v, hr.point);
+            if emitted.length() > 0.0 {
+                return emitted;
+            }
 
             if let Some(material_pdf) = hr.material.scattering_pdf(&ray, &hr) {
                 let scatter_pdf = if material_pdf.is_delta_distribution() {
@@ -162,10 +190,7 @@ impl Integrator for ImportanceSampleLightIntegrator {
                 } else {
                     let lights = &scene.lights;
                     if let Some(light) = lights.choose(&mut rng) {
-                        Box::new(MixturePDF::new(
-                            vec![material_pdf, light.pdf_for_point(hr.point)],
-                            crate::MixtureMethod::Uniform,
-                        ))
+                        light.pdf_for_point(hr.point)
                     } else {
                         material_pdf
                     }
@@ -178,7 +203,7 @@ impl Integrator for ImportanceSampleLightIntegrator {
                 };
                 let mut cos_theta = out_dir.dot(hr.normal);
 
-                while cos_theta < 0.0 {
+                if cos_theta < 0.0 {
                     out_dir = scatter_pdf.generate(&mut rng);
                     ray_out = Ray {
                         origin: hr.point,
@@ -186,6 +211,7 @@ impl Integrator for ImportanceSampleLightIntegrator {
                         time: ray.time,
                     };
                     cos_theta = out_dir.dot(hr.normal);
+                    return emitted;
                 }
 
                 let pdf = if scatter_pdf.is_delta_distribution() {
@@ -247,12 +273,6 @@ impl Integrator for BRDFSampledPathIntegrator {
             if let Some(material_pdf) = hr.material.scattering_pdf(&ray, &hr) {
                 let scatter_pdf = material_pdf;
 
-                //if material_pdf.is_delta_distribution() {
-                //    material_pdf
-                //} else {
-                //    Box::new(UniformHemispherePDF::new(hr.normal))
-                //    //material_pdf
-                //};
                 let out_dir = scatter_pdf.generate(&mut rng);
                 let ray_out = Ray {
                     origin: hr.point,
@@ -321,10 +341,7 @@ impl Integrator for UniformSampledPathIntegrator {
                 let scatter_pdf = if material_pdf.is_delta_distribution() {
                     material_pdf
                 } else {
-                    Box::new(MixturePDF::new(
-                        vec![material_pdf, Box::new(UniformHemispherePDF::new(hr.normal))],
-                        crate::MixtureMethod::Uniform,
-                    ))
+                    Box::new(UniformHemispherePDF::new(hr.normal))
                 };
                 let out_dir = scatter_pdf.generate(&mut rng);
                 let ray_out = Ray {
